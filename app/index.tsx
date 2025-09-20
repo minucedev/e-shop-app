@@ -32,7 +32,10 @@ export default function Index() {
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.loginButtonWrapper]}>
+        <TouchableOpacity style={[styles.loginButtonWrapper]}
+          onPress={() => router.push("/signup")}
+      
+        >
           <Text style={styles.signupButtonText}>Sign-up</Text>
         </TouchableOpacity>
       </View>

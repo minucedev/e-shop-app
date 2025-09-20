@@ -11,18 +11,28 @@ import { useRouter } from "expo-router";
 import { colors } from "../constants/colors";
 import { fonts } from "@/constants/fonts";
 
-const login = () => {
+const signup = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
+    phone: "",
   });
 
   const validateInputs = () => {
-    const newErrors = { email: "", password: "" };
+    const newErrors = {
+      email: "",
+      password: "",
+      confirmPassword: "",
+      phone: "",
+    };
     let isValid = true;
 
     // Validate email
@@ -43,19 +53,36 @@ const login = () => {
       isValid = false;
     }
 
+    // Validate confirm password
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = "Please confirm your password";
+      isValid = false;
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+
+    // Validate phone
+    if (!phone.trim()) {
+      newErrors.phone = "Phone number is required";
+      isValid = false;
+    } else if (!/^[0-9]{10,11}$/.test(phone.replace(/\s+/g, ""))) {
+      newErrors.phone = "Please enter a valid phone number";
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
   };
 
-  const handleLogin = () => {
+  const handleSignup = () => {
     if (validateInputs()) {
-      console.log("Login success with:", email, password);
-      // Thêm logic đăng nhập thành công ở đây
+      console.log("Signup success with:", { email, password, phone });
+      // Thêm logic đăng ký thành công ở đây
     } else {
       console.log("Validation failed");
     }
   };
-
   return (
     <View style={styles.container}>
       {/* Back Button */}
@@ -70,9 +97,8 @@ const login = () => {
       </TouchableOpacity>
 
       <View style={styles.textContainer}>
-        <Text style={styles.headingText}>Hey,</Text>
-        <Text style={styles.headingText}>WELCOME</Text>
-        <Text style={styles.headingText}>BACK</Text>
+        <Text style={styles.headingText}>Let's get</Text>
+        <Text style={styles.headingText}>started</Text>
       </View>
       <View>
         {/* Email và Password Input */}
@@ -133,22 +159,78 @@ const login = () => {
           {errors.password ? (
             <Text style={styles.errorText}>{errors.password}</Text>
           ) : null}
-          <TouchableOpacity>
-            <Text style={styles.forgotPasswordText}> Forgot Password?</Text>
-          </TouchableOpacity>
+
+          {/* Confirm Password Input */}
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color={colors.secondary}
+            />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Confirm your password"
+              placeholderTextColor={colors.secondary}
+              value={confirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                // Clear error when user starts typing
+                if (errors.confirmPassword) {
+                  setErrors({ ...errors, confirmPassword: "" });
+                }
+              }}
+              secureTextEntry={!showConfirmPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              <Ionicons
+                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                size={20}
+                color={colors.secondary}
+              />
+            </TouchableOpacity>
+          </View>
+          {errors.confirmPassword ? (
+            <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+          ) : null}
+
+          {/* Phone Input */}
+          <View style={styles.inputContainer}>
+            <Ionicons name="call-outline" size={20} color={colors.secondary} />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter your phone number"
+              placeholderTextColor={colors.secondary}
+              value={phone}
+              onChangeText={(text) => {
+                setPhone(text);
+                // Clear error when user starts typing
+                if (errors.phone) {
+                  setErrors({ ...errors, phone: "" });
+                }
+              }}
+              keyboardType="phone-pad"
+              autoCapitalize="none"
+            />
+          </View>
+          {errors.phone ? (
+            <Text style={styles.errorText}>{errors.phone}</Text>
+          ) : null}
         </View>
 
-        {/* Login Button */}
+        {/* Sign Up Button */}
         <TouchableOpacity
           style={styles.loginButtonWrapper}
-          onPress={handleLogin}
+          onPress={handleSignup}
         >
-          <Text style={styles.loginText}>Login</Text>
+          <Text style={styles.loginText}>Sign Up</Text>
         </TouchableOpacity>
         <View style={styles.footerContainer}>
-          <Text style={styles.accountText}>Don't have and account?</Text>
-          <TouchableOpacity onPress={() => router.push("/signup")}>
-            <Text style={styles.signupText}>Sign up</Text>
+          <Text style={styles.accountText}>Already have an account?</Text>
+          <TouchableOpacity onPress={() => router.push("/login")}>
+            <Text style={styles.signupText}>Login</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -240,4 +322,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default login;
+export default signup;
