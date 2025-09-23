@@ -29,7 +29,7 @@ export default function NotFoundScreen() {
           <Text style={styles.errorCode}>404</Text>
           <Text style={styles.errorTitle}>Page Not Found</Text>
           <Text style={styles.errorDescription}>
-            Sorry, the page you are looking for doesn't exist or has been moved.
+            Sorry, the page you are looking for does not exist or has been moved.
           </Text>
         </View>
 

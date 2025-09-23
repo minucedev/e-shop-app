@@ -4,13 +4,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
-  // ScrollView, // ← Không cần scroll nữa
   Platform, // ← Để check platform
+  ScrollView,
+  KeyboardAvoidingView,
 } from "react-native";
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { colors } from "../constants/colors";
+import { colors } from "@/constants/colors";
 import { fonts } from "@/constants/fonts";
 import DateTimePicker from "@react-native-community/datetimepicker"; // ← Thêm date picker
 
@@ -24,7 +25,7 @@ interface SignupErrors {
   phone: string;
 }
 
-const signup = () => {
+const Signup = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -170,222 +171,240 @@ const signup = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity
-        style={styles.backButtonWrapper}
-        onPress={() => {
-          console.log("Back button pressed!");
-          router.back();
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.white }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 0}
+    >
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "space-between",
+          padding: 20,
         }}
-        activeOpacity={0.7}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Ionicons name="arrow-back-outline" size={25} color="white" />
-      </TouchableOpacity>
-
-      {/* Header */}
-      <View style={styles.textContainer}>
-        <Text style={styles.headingText}>Create your</Text>
-        <Text style={styles.headingText}>account</Text>
-      </View>
-
-      {/* Form Container */}
-      <View style={styles.formContainer}>
-        {/* Name Input */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="person-outline" size={20} color={colors.secondary} />
-          <TextInput
-            style={styles.textInput}
-            placeholder="Enter your full name"
-            placeholderTextColor={colors.secondary}
-            value={name}
-            onChangeText={(text) => {
-              setName(text);
-              if (errors.name) {
-                setErrors({ ...errors, name: "" });
-              }
-            }}
-            autoCapitalize="words"
-          />
-        </View>
-        {errors.name ? (
-          <Text style={styles.errorText}>{errors.name}</Text>
-        ) : null}
-
-        {/* Date of Birth Input */}
+        {/* Back Button */}
         <TouchableOpacity
-          style={styles.inputContainer}
-          onPress={() => setShowDatePicker(true)}
+          style={styles.backButtonWrapper}
+          onPress={() => {
+            console.log("Back button pressed!");
+            router.back();
+          }}
+          activeOpacity={0.7}
         >
-          <Ionicons
-            name="calendar-outline"
-            size={20}
-            color={colors.secondary}
-          />
-          <View style={styles.dateDisplayContainer}>
-            <Text
-              style={[
-                styles.dateText,
-                dateOfBirth ? styles.selectedDate : styles.placeholderDate,
-              ]}
-            >
-              {dateOfBirth
-                ? formatDate(dateOfBirth)
-                : "Select your date of birth"}
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-down-outline"
-            size={20}
-            color={colors.secondary}
-          />
+          <Ionicons name="arrow-back-outline" size={25} color="white" />
         </TouchableOpacity>
-        {errors.dateOfBirth ? (
-          <Text style={styles.errorText}>{errors.dateOfBirth}</Text>
-        ) : null}
 
-        {/* DateTimePicker */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={dateOfBirth}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={handleDateChange}
-            maximumDate={new Date()}
-            minimumDate={new Date(1900, 0, 1)}
-          />
-        )}
-
-        {/* Email Input */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail-outline" size={20} color={colors.secondary} />
-          <TextInput
-            style={styles.textInput}
-            placeholder="Enter your email address"
-            placeholderTextColor={colors.secondary}
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (errors.email) {
-                setErrors({ ...errors, email: "" });
-              }
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+        {/* Header */}
+        <View style={styles.textContainer}>
+          <Text style={styles.headingText}>Create your</Text>
+          <Text style={styles.headingText}>account</Text>
         </View>
-        {errors.email ? (
-          <Text style={styles.errorText}>{errors.email}</Text>
-        ) : null}
 
-        {/* Phone Input */}
-        <View style={styles.inputContainer}>
-          <Ionicons name="call-outline" size={20} color={colors.secondary} />
-          <TextInput
-            style={styles.textInput}
-            placeholder="Enter your phone number"
-            placeholderTextColor={colors.secondary}
-            value={phone}
-            onChangeText={(text) => {
-              setPhone(text);
-              if (errors.phone) {
-                setErrors({ ...errors, phone: "" });
-              }
-            }}
-            keyboardType="phone-pad"
-            autoCapitalize="none"
-          />
-        </View>
-        {errors.phone ? (
-          <Text style={styles.errorText}>{errors.phone}</Text>
-        ) : null}
-
-        {/* Password Input */}
-        <View style={styles.inputContainer}>
-          <Ionicons
-            name="lock-closed-outline"
-            size={20}
-            color={colors.secondary}
-          />
-          <TextInput
-            style={styles.textInput}
-            placeholder="Enter your password"
-            placeholderTextColor={colors.secondary}
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (errors.password) {
-                setErrors({ ...errors, password: "" });
-              }
-            }}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+        {/* Form Container */}
+        <View style={styles.formContainer}>
+          {/* Name Input */}
+          <View style={styles.inputContainer}>
             <Ionicons
-              name={showPassword ? "eye-outline" : "eye-off-outline"}
+              name="person-outline"
               size={20}
               color={colors.secondary}
             />
-          </TouchableOpacity>
-        </View>
-        {errors.password ? (
-          <Text style={styles.errorText}>{errors.password}</Text>
-        ) : null}
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter your full name"
+              placeholderTextColor={colors.secondary}
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                if (errors.name) {
+                  setErrors({ ...errors, name: "" });
+                }
+              }}
+              autoCapitalize="words"
+            />
+          </View>
+          {errors.name ? (
+            <Text style={styles.errorText}>{errors.name}</Text>
+          ) : null}
 
-        {/* Confirm Password Input */}
-        <View style={styles.inputContainer}>
-          <Ionicons
-            name="lock-closed-outline"
-            size={20}
-            color={colors.secondary}
-          />
-          <TextInput
-            style={styles.textInput}
-            placeholder="Confirm your password"
-            placeholderTextColor={colors.secondary}
-            value={confirmPassword}
-            onChangeText={(text) => {
-              setConfirmPassword(text);
-              if (errors.confirmPassword) {
-                setErrors({ ...errors, confirmPassword: "" });
-              }
-            }}
-            secureTextEntry={!showConfirmPassword}
-            autoCapitalize="none"
-          />
+          {/* Date of Birth Input */}
           <TouchableOpacity
-            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            style={styles.inputContainer}
+            onPress={() => setShowDatePicker(true)}
           >
             <Ionicons
-              name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+              name="calendar-outline"
+              size={20}
+              color={colors.secondary}
+            />
+            <View style={styles.dateDisplayContainer}>
+              <Text
+                style={[
+                  styles.dateText,
+                  dateOfBirth ? styles.selectedDate : styles.placeholderDate,
+                ]}
+              >
+                {dateOfBirth
+                  ? formatDate(dateOfBirth)
+                  : "Select your date of birth"}
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-down-outline"
               size={20}
               color={colors.secondary}
             />
           </TouchableOpacity>
+          {errors.dateOfBirth ? (
+            <Text style={styles.errorText}>{errors.dateOfBirth}</Text>
+          ) : null}
+
+          {/* DateTimePicker */}
+          {showDatePicker && (
+            <DateTimePicker
+              value={dateOfBirth}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+              minimumDate={new Date(1900, 0, 1)}
+            />
+          )}
+
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color={colors.secondary} />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter your email address"
+              placeholderTextColor={colors.secondary}
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errors.email) {
+                  setErrors({ ...errors, email: "" });
+                }
+              }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+          {errors.email ? (
+            <Text style={styles.errorText}>{errors.email}</Text>
+          ) : null}
+
+          {/* Phone Input */}
+          <View style={styles.inputContainer}>
+            <Ionicons name="call-outline" size={20} color={colors.secondary} />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter your phone number"
+              placeholderTextColor={colors.secondary}
+              value={phone}
+              onChangeText={(text) => {
+                setPhone(text);
+                if (errors.phone) {
+                  setErrors({ ...errors, phone: "" });
+                }
+              }}
+              keyboardType="phone-pad"
+              autoCapitalize="none"
+            />
+          </View>
+          {errors.phone ? (
+            <Text style={styles.errorText}>{errors.phone}</Text>
+          ) : null}
+
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color={colors.secondary}
+            />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter your password"
+              placeholderTextColor={colors.secondary}
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errors.password) {
+                  setErrors({ ...errors, password: "" });
+                }
+              }}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons
+                name={showPassword ? "eye-outline" : "eye-off-outline"}
+                size={20}
+                color={colors.secondary}
+              />
+            </TouchableOpacity>
+          </View>
+          {errors.password ? (
+            <Text style={styles.errorText}>{errors.password}</Text>
+          ) : null}
+
+          {/* Confirm Password Input */}
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color={colors.secondary}
+            />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Confirm your password"
+              placeholderTextColor={colors.secondary}
+              value={confirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (errors.confirmPassword) {
+                  setErrors({ ...errors, confirmPassword: "" });
+                }
+              }}
+              secureTextEntry={!showConfirmPassword}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              <Ionicons
+                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                size={20}
+                color={colors.secondary}
+              />
+            </TouchableOpacity>
+          </View>
+          {errors.confirmPassword ? (
+            <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+          ) : null}
         </View>
-        {errors.confirmPassword ? (
-          <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-        ) : null}
-      </View>
 
-      {/* Sign Up Button */}
-      <TouchableOpacity
-        style={styles.loginButtonWrapper}
-        onPress={handleSignup}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.loginText}>Create Account</Text>
-      </TouchableOpacity>
-
-      {/* Footer */}
-      <View style={styles.footerContainer}>
-        <Text style={styles.accountText}>Already have an account? </Text>
-        <TouchableOpacity onPress={() => router.push("/login")}>
-          <Text style={styles.signupText}>Login</Text>
+        {/* Sign Up Button */}
+        <TouchableOpacity
+          style={styles.loginButtonWrapper}
+          onPress={handleSignup}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.loginText}>Create Account</Text>
         </TouchableOpacity>
-      </View>
-    </View>
+
+        {/* Footer */}
+        <View style={styles.footerContainer}>
+          <Text style={styles.accountText}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => router.push("/login")}>
+            <Text style={styles.SignupText}>Login</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -478,7 +497,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: fonts.Regular,
   },
-  signupText: {
+  SignupText: {
     color: colors.primary,
     fontFamily: fonts.Bold,
   },
@@ -504,4 +523,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default signup;
+export default Signup;

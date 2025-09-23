@@ -8,11 +8,13 @@ import {
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { colors } from "../constants/colors";
+import { colors } from "../../constants/colors";
 import { fonts } from "@/constants/fonts";
+import { useAuth } from "@/contexts/AuthContext";
 
-const login = () => {
+const Login = () => {
   const router = useRouter();
+  const { signIn, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,11 +23,12 @@ const login = () => {
     password: "",
   });
 
+  const canGoBack = router.canGoBack();
+
   const validateInputs = () => {
     const newErrors = { email: "", password: "" };
     let isValid = true;
 
-    // Validate email
     if (!email.trim()) {
       newErrors.email = "Email is required";
       isValid = false;
@@ -34,7 +37,6 @@ const login = () => {
       isValid = false;
     }
 
-    // Validate password
     if (!password.trim()) {
       newErrors.password = "Password is required";
       isValid = false;
@@ -47,35 +49,43 @@ const login = () => {
     return isValid;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (validateInputs()) {
-      console.log("Login success with:", email, password);
-      // Thêm logic đăng nhập thành công ở đây
-    } else {
-      console.log("Validation failed");
+      try {
+        await signIn(email, password);
+      } catch (error) {
+        console.error("Login error:", error);
+
+        // ✅ Fix: Type assertion cho error
+        const errorMessage =
+          error instanceof Error ? error.message : "Đăng nhập thất bại";
+
+        setErrors({
+          email: "",
+          password: errorMessage,
+        });
+      }
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity
-        style={styles.backButtonWrapper}
-        onPress={() => {
-          console.log("Back button pressed!");
-          router.back();
-        }}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="white" />
-      </TouchableOpacity>
+      {canGoBack && (
+        <TouchableOpacity
+          style={styles.backButtonWrapper}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back-outline" size={25} color="white" />
+        </TouchableOpacity>
+      )}
 
       <View style={styles.textContainer}>
         <Text style={styles.headingText}>Hey,</Text>
         <Text style={styles.headingText}>WELCOME</Text>
         <Text style={styles.headingText}>BACK</Text>
       </View>
+
       <View>
-        {/* Email và Password Input */}
         <View style={styles.formContainer}>
           {/* Email Input */}
           <View style={styles.inputContainer}>
@@ -87,13 +97,13 @@ const login = () => {
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
-                // Clear error when user starts typing
                 if (errors.email) {
                   setErrors({ ...errors, email: "" });
                 }
               }}
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isLoading}
             />
           </View>
           {errors.email ? (
@@ -114,13 +124,13 @@ const login = () => {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
-                // Clear error when user starts typing
                 if (errors.password) {
                   setErrors({ ...errors, password: "" });
                 }
               }}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
+              editable={!isLoading}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
               <Ionicons
@@ -133,21 +143,34 @@ const login = () => {
           {errors.password ? (
             <Text style={styles.errorText}>{errors.password}</Text>
           ) : null}
+
           <TouchableOpacity>
-            <Text style={styles.forgotPasswordText}> Forgot Password?</Text>
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
         </View>
 
         {/* Login Button */}
         <TouchableOpacity
-          style={styles.loginButtonWrapper}
+          style={[
+            styles.loginButtonWrapper,
+            isLoading && styles.disabledButton,
+          ]}
           onPress={handleLogin}
+          disabled={isLoading}
         >
-          <Text style={styles.loginText}>Login</Text>
+          {isLoading ? (
+            <Text style={styles.loginText}>Logging in...</Text>
+          ) : (
+            <Text style={styles.loginText}>Login</Text>
+          )}
         </TouchableOpacity>
+
         <View style={styles.footerContainer}>
-          <Text style={styles.accountText}>Don't have and account?</Text>
-          <TouchableOpacity onPress={() => router.push("/signup")}>
+          <Text style={styles.accountText}>Don't have an account?</Text>
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/signup")}
+            disabled={isLoading}
+          >
             <Text style={styles.signupText}>Sign up</Text>
           </TouchableOpacity>
         </View>
@@ -211,6 +234,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  disabledButton: {
+    backgroundColor: colors.secondary, // Style khi disabled
+  },
   loginText: {
     color: colors.white,
     fontSize: 18,
@@ -240,4 +266,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default login;
+export default Login;

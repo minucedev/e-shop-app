@@ -1,11 +1,27 @@
-import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { fonts } from "@/constants/fonts"; // import mapping fonts
+import { fonts } from "@/constants/fonts";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ActivityIndicator, View } from "react-native";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -24,5 +40,26 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <AuthProvider>
+      <AuthGate>
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* Initial routing screen */}
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+
+          {/* Welcome screen (root) */}
+          <Stack.Screen name="welcome" options={{ headerShown: false }} />
+
+          {/* Auth screens group */}
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+
+          {/* Main app screens group */}
+          <Stack.Screen name="(app)" options={{ headerShown: false }} />
+
+          {/* Global screens */}
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </AuthGate>
+    </AuthProvider>
+  );
 }

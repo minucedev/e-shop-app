@@ -1,101 +1,33 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
-import { colors } from "../constants/colors";
-import { fonts } from "../constants/fonts";
+import React, { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
-import "./global.css";
+import { ActivityIndicator, View } from "react-native";
 
-export default function Index() {
-  //Điều hướng
+export default function InitialScreen() {
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
+  useEffect(() => {
+    if (isLoading) return;
+    // Khi đã biết trạng thái auth, điều hướng bằng router.replace
+    if (user) {
+      router.replace("/(app)/home"); // thay đổi sang app group
+    } else {
+      router.replace("/welcome"); // welcome ở root
+    }
+  }, [user, isLoading, router]);
+
+  // Hiển thị loading trong khi chờ
   return (
-    <View style={styles.container}>
-      <Image
-        source={require("../assets/images/logo.png")}
-        style={styles.logo}
-      />
-      <Image
-        source={require("../assets/images/man.png")}
-        style={styles.bannerImage}
-      />
-      <Text style={styles.title}>Innovate Your Life.</Text>
-      <Text style={styles.subTitle}>Tech for everyone, every day.</Text>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.loginButtonWrapper,
-            { backgroundColor: colors.primary },
-          ]}
-          onPress={() => router.push("/login")}
-        >
-          <Text style={styles.loginButtonText}>Login</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.loginButtonWrapper]}
-          onPress={() => router.push("/signup")}
-        >
-          <Text style={styles.signupButtonText}>Sign-up</Text>
-        </TouchableOpacity>
-      </View>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#fff",
+      }}
+    >
+      <ActivityIndicator size="large" color="#007AFF" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.white,
-    alignItems: "center",
-  },
-  logo: {
-    height: 60,
-    width: 140,
-    marginVertical: 50,
-  },
-  bannerImage: {
-    height: 250,
-    width: 231,
-  },
-  title: {
-    fontSize: 40,
-    fontFamily: fonts.SemiBold,
-    paddingHorizontal: 20,
-    textAlign: "center",
-    color: colors.primary,
-    marginTop: 40,
-  },
-  subTitle: {
-    fontSize: 18,
-    fontFamily: fonts.Bold,
-    paddingHorizontal: 20,
-    textAlign: "center",
-    color: colors.secondary,
-    marginVertical: 20,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    marginTop: 20,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    width: "80%",
-    height: 60,
-    borderRadius: 100,
-  },
-  loginButtonWrapper: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: "50%",
-    borderRadius: 98,
-  },
-  loginButtonText: {
-    color: colors.white,
-    fontSize: 18,
-    fontFamily: fonts.SemiBold,
-  },
-  signupButtonText: {
-    fontSize: 18,
-    fontFamily: fonts.SemiBold,
-  },
-});
