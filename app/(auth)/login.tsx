@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
+  Alert,
 } from "react-native";
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const router = useRouter();
-  const { signIn, isLoading } = useAuth();
+  const { signIn, isLoading, hasError, errorMessage } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,14 +53,16 @@ const Login = () => {
   const handleLogin = async () => {
     if (validateInputs()) {
       try {
+        console.log("Đang gọi signIn với:", email, password);
         await signIn(email, password);
+        console.log("Đăng nhập thành công");
+        // Nếu muốn redirect sau khi đăng nhập thành công, chỉ gọi router.replace ở đây
       } catch (error) {
-        console.error("Login error:", error);
-
-        // ✅ Fix: Type assertion cho error
+        console.log("Login error:", error);
         const errorMessage =
           error instanceof Error ? error.message : "Đăng nhập thất bại";
-
+        // Hiển thị popup lỗi
+        Alert.alert("Đăng nhập thất bại", errorMessage);
         setErrors({
           email: "",
           password: errorMessage,
@@ -70,6 +73,10 @@ const Login = () => {
 
   return (
     <View style={styles.container}>
+      {/* Hiển thị lỗi xác thực toàn cục nếu có */}
+      {hasError && errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
       {canGoBack && (
         <TouchableOpacity
           style={styles.backButtonWrapper}
@@ -144,7 +151,9 @@ const Login = () => {
             <Text style={styles.errorText}>{errors.password}</Text>
           ) : null}
 
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/resetpassword")}
+          >
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
         </View>

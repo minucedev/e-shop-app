@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ActivityIndicator, View } from "react-native";
 
 export default function AppLayout() {
-  const { user, isLoading } = useAuth();
+  const { accessToken, isLoading } = useAuth();
 
   // Hiển thị loading khi đang check auth
   if (isLoading) {
@@ -22,7 +22,7 @@ export default function AppLayout() {
   }
 
   // Redirect về login nếu chưa đăng nhập
-  if (!user) {
+  if (!accessToken) {
     return <Redirect href="/(auth)/login" />;
   }
 

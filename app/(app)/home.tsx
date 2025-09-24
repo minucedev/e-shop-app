@@ -1,12 +1,12 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import React from "react";
+import React, { use } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext"; // ← ADDED
 
 const Home = () => {
   const router = useRouter();
-  const { signOut } = useAuth(); // ← ADDED
+  const { signOut, user } = useAuth(); // ← ADDED
 
   const handleSignOut = async () => {
     try {
@@ -42,7 +42,16 @@ const Home = () => {
 
       <View style={styles.content}>
         <Text style={styles.title}>HOME</Text>
-        {/* keep existing sign out in content too (optional) */}
+        {user && (
+          <View style={{ marginVertical: 16 }}>
+            <Text style={{ fontWeight: "bold" }}>Thông tin tài khoản:</Text>
+            <Text>Tên: {user.name}</Text>
+            <Text>Email: {user.email}</Text>
+            <Text>Ngày sinh: {user.dateOfBirth}</Text>
+            <Text>SĐT: {user.phone}</Text>
+            <Text>Password: {user.password}</Text>
+          </View>
+        )}
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>

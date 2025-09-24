@@ -28,7 +28,14 @@ interface SignupErrors {
 
 const Signup = () => {
   const router = useRouter();
-  const { signUp, isLoading: authLoading, user } = useAuth(); // ← ADDED
+  const {
+    signUp,
+    signOut,
+    user,
+    isLoading: authLoading,
+    hasError,
+    errorMessage,
+  } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -186,6 +193,17 @@ const Signup = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      console.log("Sign out successful");
+      // Navigate to login or splash screen after sign out
+      router.replace("/(auth)/login"); // hoặc screen bạn muốn
+    } catch (err) {
+      console.error("Sign out error:", err);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.white }}
@@ -221,6 +239,10 @@ const Signup = () => {
 
         {/* Form Container */}
         <View style={styles.formContainer}>
+          {/* Hiển thị lỗi xác thực toàn cục nếu có */}
+          {hasError && errorMessage ? (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          ) : null}
           {/* Name Input */}
           <View style={styles.inputContainer}>
             <Ionicons
@@ -457,6 +479,28 @@ const Signup = () => {
             <Text style={styles.SignupText}>Login</Text>
           </TouchableOpacity>
         </View>
+
+        {/* User Info Section - chỉ hiển thị khi đã đăng nhập */}
+        {user && (
+          <View style={styles.userInfoContainer}>
+            <Text style={styles.userInfoTitle}>Thông tin tài khoản:</Text>
+            <Text style={styles.userInfoText}>Tên: {user.name}</Text>
+            <Text style={styles.userInfoText}>Email: {user.email}</Text>
+            <Text style={styles.userInfoText}>
+              Ngày sinh: {formatDate(new Date(user.dateOfBirth))}
+            </Text>
+            <Text style={styles.userInfoText}>SĐT: {user.phone}</Text>
+
+            {/* Nút Đăng xuất */}
+            <TouchableOpacity
+              style={styles.signOutButton}
+              onPress={handleSignOut}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.signOutText}>Đăng xuất</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -477,10 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
@@ -503,10 +544,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 0, // ← Đặt về 0 để dựa vào height
+    paddingVertical: 0,
     marginVertical: 6,
     height: 52,
-    justifyContent: "center", // ← Thêm để căn giữa content
+    justifyContent: "center",
   },
   textInput: {
     flex: 1,
@@ -514,11 +555,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.Light,
     fontSize: 16,
     color: colors.primary,
-    height: "100%", // ← Chiếm full height của container
-    // Xóa textAlignVertical vì gây conflict
-    paddingVertical: 0, // ← Đặt về 0 để text center tự nhiên
-    textAlign: "left", // ← Căn trái text
-    includeFontPadding: false, // ← Loại bỏ font padding (Android)
+    height: "100%",
+    paddingVertical: 0,
+    textAlign: "left",
+    includeFontPadding: false,
   },
   loginButtonWrapper: {
     backgroundColor: colors.primary,
@@ -540,7 +580,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.Light,
     marginTop: 5,
     marginLeft: 20,
-    maxHeight: 40, // giới hạn chiều cao
+    maxHeight: 40,
     lineHeight: 16,
   },
   footerContainer: {
@@ -561,21 +601,59 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 10,
     justifyContent: "center",
-    height: "100%", // ← Chiếm full height
-    alignItems: "flex-start", // ← Căn trái như TextInput
+    height: "100%",
+    alignItems: "flex-start",
   },
   dateText: {
     fontSize: 16,
     fontFamily: fonts.Light,
-    color: colors.primary, // ← Đảm bảo có màu
-    includeFontPadding: false, // ← Loại bỏ font padding
-    // Xóa lineHeight và textAlignVertical
+    color: colors.primary,
+    includeFontPadding: false,
   },
   selectedDate: {
     color: colors.primary,
   },
   placeholderDate: {
     color: colors.secondary,
+  },
+  userInfoContainer: {
+    marginTop: 20,
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: "#f9f9f9",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  userInfoTitle: {
+    fontSize: 18,
+    fontFamily: fonts.SemiBold,
+    marginBottom: 10,
+    color: colors.primary,
+  },
+  userInfoText: {
+    fontSize: 14,
+    fontFamily: fonts.Regular,
+    marginBottom: 5,
+    color: colors.primary,
+  },
+  signOutButton: {
+    marginTop: 10,
+    backgroundColor: colors.primary,
+    borderRadius: 100,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 40,
+  },
+  signOutText: {
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: fonts.SemiBold,
   },
 });
 
