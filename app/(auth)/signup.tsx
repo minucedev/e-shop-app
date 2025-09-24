@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { colors } from "@/constants/colors";
 import { fonts } from "@/constants/fonts";
 import DateTimePicker from "@react-native-community/datetimepicker"; // ← Thêm date picker
+import { useAuth } from "@/contexts/AuthContext"; // ← ADDED
 
 // ← Thêm interface ở đầu component
 interface SignupErrors {
@@ -27,6 +28,7 @@ interface SignupErrors {
 
 const Signup = () => {
   const router = useRouter();
+  const { signUp, isLoading: authLoading, user } = useAuth(); // ← ADDED
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -155,18 +157,32 @@ const Signup = () => {
     }
   };
 
-  const handleSignup = () => {
-    if (validateInputs()) {
-      console.log("Signup success with:", {
+  const handleSignup = async () => {
+    if (!validateInputs()) return;
+
+    try {
+      await signUp(
+        name.trim(),
+        email.trim(),
+        password,
+        formatDate(dateOfBirth),
+        phone.trim()
+      );
+
+      console.log("Signup successful");
+      console.log("Submitted payload:", {
         name,
         dateOfBirth: formatDate(dateOfBirth),
         email,
-        password,
         phone,
       });
-      // Thêm logic đăng ký thành công ở đây
-    } else {
-      console.log("Validation failed");
+
+      // Điều hướng vào app chính (chọn screen phù hợp)
+      router.replace("/(app)/home"); // hoặc "/(app)/home"
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Signup failed";
+      setErrors((prev) => ({ ...prev, email: message }));
+      console.error("Signup error:", err);
     }
   };
 
@@ -259,7 +275,14 @@ const Signup = () => {
             />
           </TouchableOpacity>
           {errors.dateOfBirth ? (
-            <Text style={styles.errorText}>{errors.dateOfBirth}</Text>
+            <Text
+              style={styles.errorText}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+              allowFontScaling={false}
+            >
+              {errors.dateOfBirth}
+            </Text>
           ) : null}
 
           {/* DateTimePicker */}
@@ -293,7 +316,14 @@ const Signup = () => {
             />
           </View>
           {errors.email ? (
-            <Text style={styles.errorText}>{errors.email}</Text>
+            <Text
+              style={styles.errorText}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+              allowFontScaling={false}
+            >
+              {errors.email}
+            </Text>
           ) : null}
 
           {/* Phone Input */}
@@ -315,7 +345,14 @@ const Signup = () => {
             />
           </View>
           {errors.phone ? (
-            <Text style={styles.errorText}>{errors.phone}</Text>
+            <Text
+              style={styles.errorText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              allowFontScaling={false}
+            >
+              {errors.phone}
+            </Text>
           ) : null}
 
           {/* Password Input */}
@@ -348,7 +385,14 @@ const Signup = () => {
             </TouchableOpacity>
           </View>
           {errors.password ? (
-            <Text style={styles.errorText}>{errors.password}</Text>
+            <Text
+              style={styles.errorText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              allowFontScaling={false}
+            >
+              {errors.password}
+            </Text>
           ) : null}
 
           {/* Confirm Password Input */}
@@ -383,7 +427,14 @@ const Signup = () => {
             </TouchableOpacity>
           </View>
           {errors.confirmPassword ? (
-            <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            <Text
+              style={styles.errorText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              allowFontScaling={false}
+            >
+              {errors.confirmPassword}
+            </Text>
           ) : null}
         </View>
 
@@ -392,14 +443,17 @@ const Signup = () => {
           style={styles.loginButtonWrapper}
           onPress={handleSignup}
           activeOpacity={0.8}
+          disabled={authLoading} // ← DISABLE while auth request
         >
-          <Text style={styles.loginText}>Create Account</Text>
+          <Text style={styles.loginText}>
+            {authLoading ? "Creating..." : "Create Account"}
+          </Text>
         </TouchableOpacity>
 
         {/* Footer */}
         <View style={styles.footerContainer}>
           <Text style={styles.accountText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => router.push("/login")}>
+          <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
             <Text style={styles.SignupText}>Login</Text>
           </TouchableOpacity>
         </View>
@@ -486,6 +540,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.Light,
     marginTop: 5,
     marginLeft: 20,
+    maxHeight: 40, // giới hạn chiều cao
+    lineHeight: 16,
   },
   footerContainer: {
     flexDirection: "row",
