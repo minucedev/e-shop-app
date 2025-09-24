@@ -19,7 +19,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!accessToken && !inPublic) {
       router.replace("/(auth)/login");
     } else if (accessToken && inPublic) {
-      router.replace("/(app)/home");
+      router.replace("/(app)/(tabs)/home");
     }
   }, [accessToken, isLoading, segments, router]);
 

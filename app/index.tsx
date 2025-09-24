@@ -11,7 +11,7 @@ export default function InitialScreen() {
     if (isLoading) return;
     // Khi đã biết trạng thái auth, điều hướng bằng router.replace
     if (user) {
-      router.replace("/(app)/home"); // thay đổi sang app group
+      router.replace("/(app)/(tabs)/home"); // thay đổi sang app group
     } else {
       router.replace("/welcome"); // welcome ở root
     }

@@ -185,7 +185,7 @@ const Signup = () => {
       });
 
       // Điều hướng vào app chính (chọn screen phù hợp)
-      router.replace("/(app)/home"); // hoặc "/(app)/home"
+      router.replace("/(app)/(tabs)/home"); 
     } catch (err) {
       const message = err instanceof Error ? err.message : "Signup failed";
       setErrors((prev) => ({ ...prev, email: message }));

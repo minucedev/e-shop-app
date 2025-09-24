@@ -8,6 +8,7 @@ export type User = {
   password: string; // lưu plain text (mock, không bảo mật)
   dateOfBirth: string; // Format: YYYY-MM-DD
   phone: string;
+  avatar?: string; // Thêm dòng này, không bỏ password
 };
 
 const MOCK_USERS_KEY = "MOCK_USERS";
@@ -37,12 +38,14 @@ export const authMock = {
     password,
     dateOfBirth,
     phone,
+    avatar, // Thêm avatar vào params
   }: {
     name: string;
     email: string;
     password: string;
     dateOfBirth: string;
     phone: string;
+    avatar?: string; // Thêm avatar vào type
   }) {
     const users = await getStoredUsers();
 
@@ -63,6 +66,7 @@ export const authMock = {
       password,
       dateOfBirth,
       phone,
+      avatar: avatar || "", // Gán avatar nếu có, nếu không thì chuỗi rỗng
     };
 
     const updatedUsers = [...users, newUser];
@@ -119,8 +123,18 @@ export const authMock = {
         password: "123456",
         dateOfBirth: "1990-01-01",
         phone: "0123456789",
+        avatar: "", // Thêm avatar mặc định
       };
       await saveUsers([defaultUser]);
     }
+  },
+
+  async updateUser(updatedUser: User) {
+    const users = await getStoredUsers();
+    const idx = users.findIndex((u) => u.id === updatedUser.id);
+    if (idx === -1) throw new Error("User not found");
+    users[idx] = updatedUser;
+    await saveUsers(users);
+    return updatedUser;
   },
 };

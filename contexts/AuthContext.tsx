@@ -18,10 +18,13 @@ type AuthContextType = {
     email: string,
     password: string,
     dateOfBirth: string,
-    phone: string
+    phone: string,
+    avatar?: string
   ) => Promise<void>;
   signOut: () => Promise<void>;
   refreshTokenFn: () => Promise<void>;
+  setUser?: React.Dispatch<React.SetStateAction<User | null>>; // Thêm dòng này
+  updateUser?: (updated: Partial<User>) => Promise<void>; // Thêm dòng này
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,7 +98,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     email: string,
     password: string,
     dateOfBirth: string,
-    phone: string
+    phone: string,
+    avatar?: string // Thêm avatar vào signUp
   ) => {
     setIsLoading(true);
     setHasError(false);
@@ -107,6 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password,
         dateOfBirth,
         phone,
+        avatar, // Truyền avatar vào mock
       });
       const expiresIn = 3600;
       const mockRefreshToken = "mock-refresh-token";
@@ -169,6 +174,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Hàm cập nhật user (bao gồm mật khẩu)
+  const updateUser = async (updated: Partial<User>) => {
+    if (!user) return;
+    const newUser: User = {
+      ...user,
+      ...updated,
+    };
+    await authMock.updateUser(newUser); // Sync lên storage
+    setUser(newUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -184,6 +200,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signUp,
         signOut,
         refreshTokenFn,
+        setUser,
+        updateUser, // Thêm dòng này
       }}
     >
       {children}
