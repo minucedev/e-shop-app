@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { fonts } from "@/constants/fonts";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ActivityIndicator, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();

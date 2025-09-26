@@ -49,6 +49,7 @@ const Profile = () => {
         <ProfileButton
           icon={<Ionicons name="location-outline" size={28} color="#007AFF" />}
           label="Address Book"
+          onPress={() => router.push("/(app)/edit-address")}
         />
         <ProfileButton
           icon={<Ionicons name="list-outline" size={28} color="#007AFF" />}
@@ -90,10 +91,20 @@ type ProfileButtonProps = {
   icon: React.ReactNode;
   label: string;
   color?: string;
+  onPress?: () => void;
 };
 
-const ProfileButton = ({ icon, label, color = "#222" }: ProfileButtonProps) => (
-  <View className="flex-row items-center py-5 border-b border-gray-100 px-2">
+const ProfileButton = ({
+  icon,
+  label,
+  color = "#222",
+  onPress,
+}: ProfileButtonProps) => (
+  <TouchableOpacity
+    onPress={onPress}
+    activeOpacity={0.7}
+    className="flex-row items-center py-5 border-b border-gray-100 px-2"
+  >
     <View className="mr-6">{icon}</View>
     <Text
       className={`text-lg font-semibold ${color !== "#222" ? "" : "text-gray-900"}`}
@@ -106,7 +117,7 @@ const ProfileButton = ({ icon, label, color = "#222" }: ProfileButtonProps) => (
       color="#bbb"
       style={{ marginLeft: "auto" }}
     />
-  </View>
+  </TouchableOpacity>
 );
 
 export default Profile;

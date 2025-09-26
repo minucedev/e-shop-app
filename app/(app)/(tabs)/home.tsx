@@ -1,125 +1,120 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import React, { use } from "react";
-import { useRouter } from "expo-router";
+import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
+import React from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "@/contexts/AuthContext"; // ← ADDED
+
+const categories = [
+  { icon: "phone-portrait", label: "Phones" },
+  { icon: "laptop", label: "Laptops" },
+  { icon: "tablet-portrait", label: "Tablets" },
+  { icon: "watch", label: "Watches" },
+  { icon: "headset", label: "Accessories" },
+  { icon: "tv", label: "TVs" },
+  { icon: "game-controller", label: "Gaming" },
+  { icon: "camera", label: "Cameras" },
+];
+
+const featuredProducts = [
+  {
+    id: "1",
+    name: "iPhone 15 Pro Max",
+    price: "32.990.000₫",
+    image:
+      "https://cdn.tgdd.vn/Products/Images/42/303891/iphone-15-pro-max-blue-thumb-600x600.jpg",
+  },
+  {
+    id: "2",
+    name: "Samsung Galaxy S24 Ultra",
+    price: "28.990.000₫",
+    image:
+      "https://cdn.tgdd.vn/Products/Images/42/303890/samsung-galaxy-s24-ultra-thumb-600x600.jpg",
+  },
+  {
+    id: "3",
+    name: "MacBook Air M3 2024",
+    price: "29.990.000₫",
+    image:
+      "https://cdn.tgdd.vn/Products/Images/44/322927/macbook-air-m3-2024-600x600.jpg",
+  },
+];
 
 const Home = () => {
-  const router = useRouter();
-  const { signOut, user } = useAuth(); // ← ADDED
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.replace("/welcome"); // redirect to welcome after sign out
-    } catch (err) {
-      console.error("Sign out failed:", err);
-    }
-  };
-
   return (
-    <View style={styles.container}>
-      {/* Debug label to confirm this file is rendered */}
-      <Text style={styles.debugLabel}>Home (file: home.tsx)</Text>
-
-      {/* Top-left back */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-        accessibilityLabel="back-button"
-      >
-        <Ionicons name="arrow-back-outline" size={20} color="#fff" />
-      </TouchableOpacity>
-
-      {/* Top-right persistent Sign out */}
-      <TouchableOpacity
-        style={styles.signOutTopRight}
-        onPress={handleSignOut}
-        accessibilityLabel="signout-top"
-      >
-        <Text style={styles.signOutText}>Sign out</Text>
-      </TouchableOpacity>
-
-      <View style={styles.content}>
-        <Text style={styles.title}>HOME</Text>
-        {user && (
-          <View style={{ marginVertical: 16 }}>
-            <Text style={{ fontWeight: "bold" }}>Thông tin tài khoản:</Text>
-            <Text>Tên: {user.name}</Text>
-            <Text>Email: {user.email}</Text>
-            <Text>Ngày sinh: {user.dateOfBirth}</Text>
-            <Text>SĐT: {user.phone}</Text>
-            <Text>Password: {user.password}</Text>
-          </View>
-        )}
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign out</Text>
+    <ScrollView className="flex-1 bg-white">
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-6 pt-8 pb-4 bg-blue-600 rounded-b-3xl">
+        <View>
+          <Text className="text-white text-2xl font-bold">E-Shop</Text>
+          <Text className="text-blue-100 text-base mt-1">
+            Welcome to the best electronics store!
+          </Text>
+        </View>
+        <TouchableOpacity className="bg-white p-2 rounded-full">
+          <Ionicons name="person-circle" size={36} color="#007AFF" />
         </TouchableOpacity>
       </View>
-    </View>
+
+      {/* Categories - horizontal scroll */}
+      <View className="mt-6">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 24 }}
+        >
+          {categories.map((cat) => (
+            <CategoryButton key={cat.label} icon={cat.icon} label={cat.label} />
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Banner */}
+      <View className="px-6 mt-6">
+        <Image
+          source={{
+            uri: "https://cdn.tgdd.vn/2023/11/banner/Banner-Desk-1200x300-1.png",
+          }}
+          className="w-full h-32 rounded-2xl"
+          resizeMode="cover"
+        />
+      </View>
+
+      {/* Featured products */}
+      <View className="px-6 mt-8 mb-10">
+        <Text className="text-xl font-bold text-gray-900 mb-4">
+          Featured Products
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {featuredProducts.map((item) => (
+            <View
+              key={item.id}
+              className="mr-5 bg-white rounded-2xl shadow p-4 w-48"
+            >
+              <Image
+                source={{ uri: item.image }}
+                className="w-full h-32 rounded-xl mb-3"
+                resizeMode="contain"
+              />
+              <Text className="font-semibold text-base text-gray-900 mb-1">
+                {item.name}
+              </Text>
+              <Text className="text-blue-600 font-bold text-lg">
+                {item.price}
+              </Text>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#fff" },
-
-  // đặt back button ở góc trên cùng
-  backButton: {
-    position: "absolute",
-    top: 16,
-    left: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-
-  // nhãn debug (có thể xóa nếu không cần)
-  debugLabel: {
-    position: "absolute",
-    top: 18,
-    left: 64,
-    color: "#111",
-    fontSize: 12,
-    zIndex: 10,
-  },
-
-  // nút sign out cố định ở góc trên phải
-  signOutTopRight: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#FF3B30",
-    borderRadius: 8,
-    zIndex: 10,
-  },
-
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 60, // tránh bị che bởi top buttons
-  },
-
-  title: { fontSize: 18, fontWeight: "600", color: "#111" },
-
-  // sign out styles (in-content)
-  signOutButton: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: "#FF3B30",
-    borderRadius: 8,
-  },
-  signOutText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-});
+const CategoryButton = ({ icon, label }: { icon: any; label: string }) => (
+  <TouchableOpacity
+    className="bg-blue-50 rounded-2xl px-6 py-4 flex-row items-center min-w-[120px] mr-4"
+    activeOpacity={1}
+  >
+    <Ionicons name={icon} size={28} color="#007AFF" className="mr-2" />
+    <Text className="text-blue-900 font-semibold text-base">{label}</Text>
+  </TouchableOpacity>
+);
 
 export default Home;
