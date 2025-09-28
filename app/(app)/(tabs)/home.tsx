@@ -91,6 +91,14 @@ const Home = () => {
 
   const { user } = useAuth();
 
+  const [searchText, setSearchText] = React.useState("");
+
+  // Xử lý tìm kiếm
+  const handleSearch = (text: string) => {
+    // TODO: Tích hợp API tìm kiếm sản phẩm ở đây
+    console.log("Tìm kiếm:", text);
+  };
+
   return (
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
@@ -106,11 +114,26 @@ const Home = () => {
           {user?.name}
         </Text>
         {/* Search Bar */}
-        <TextInput
-          className="h-12 bg-gray-100 rounded-full px-4 mt-4 text-gray-700"
-          placeholder="Search for equipments..."
-          placeholderTextColor="#6b7280"
-        />
+        <View className="flex-row items-center mt-4">
+          <TouchableOpacity onPress={() => handleSearch(searchText)}>
+            <Ionicons
+              name="search"
+              size={24}
+              color="#222"
+              style={{ marginRight: 8 }}
+            />
+          </TouchableOpacity>
+          <TextInput
+            className="flex-1 h-12 bg-gray-100 rounded-full px-4 text-gray-700"
+            placeholder="Search for equipments..."
+            placeholderTextColor="#6b7280"
+            value={searchText}
+            onChangeText={setSearchText}
+            onSubmitEditing={(e) => handleSearch(e.nativeEvent.text)}
+            returnKeyType="search"
+            style={{ borderWidth: 0, backgroundColor: "transparent" }}
+          />
+        </View>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -124,7 +147,7 @@ const Home = () => {
             {/* Hình ảnh bên trái */}
             <Image
               source={{
-          uri: "https://hungphatlaptop.com/wp-content/uploads/2023/07/Alienware-Aurora-R15-Gaming-Desktop-2023-H2.jpeg",
+                uri: "https://hungphatlaptop.com/wp-content/uploads/2023/07/Alienware-Aurora-R15-Gaming-Desktop-2023-H2.jpeg",
               }}
               className="w-24 h-24 rounded-xl mr-4 bg-white"
               resizeMode="cover"
@@ -132,13 +155,11 @@ const Home = () => {
             {/* Nội dung chữ */}
             <View className="flex-1">
               <Text className="text-white text-xl font-bold">
-          ALIENWARE GAMINGS
+                ALIENWARE GAMINGS
               </Text>
-              <Text className="text-white text-lg font-semibold">
-          DESKTOPS
-              </Text>
+              <Text className="text-white text-lg font-semibold">DESKTOPS</Text>
               <Text className="text-white text-base mt-1">
-          Starting at $1,999
+                Starting at $1,999
               </Text>
             </View>
           </View>
@@ -146,24 +167,29 @@ const Home = () => {
 
         {/* Popular Now Section */}
         <View className="px-4 mt-6">
-          <Text className="text-xl font-bold text-gray-900 mb-4">Popular Now</Text>
+          <Text className="text-xl font-bold text-gray-900 mb-4">
+            Popular Now
+          </Text>
           <FlatList
             data={featuredProducts}
             renderItem={({ item }) => (
               <TouchableOpacity className="mr-4 w-40 bg-white rounded-lg p-3 shadow-sm">
-          <View className="bg-blue-50 h-24 rounded-md mb-2 items-center justify-center overflow-hidden">
-            <Image
-              source={{ uri: item.image }}
-              className="w-full h-full rounded"
-              resizeMode="cover"
-            />
-          </View>
-          <Text className="text-base font-bold text-gray-900" numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text className="text-sm font-semibold text-blue-700 mt-1">
-            {item.price}
-          </Text>
+                <View className="bg-blue-50 h-24 rounded-md mb-2 items-center justify-center overflow-hidden">
+                  <Image
+                    source={{ uri: item.image }}
+                    className="w-full h-full rounded"
+                    resizeMode="cover"
+                  />
+                </View>
+                <Text
+                  className="text-base font-bold text-gray-900"
+                  numberOfLines={1}
+                >
+                  {item.name}
+                </Text>
+                <Text className="text-sm font-semibold text-blue-700 mt-1">
+                  {item.price}
+                </Text>
               </TouchableOpacity>
             )}
             keyExtractor={(item) => item.id}
