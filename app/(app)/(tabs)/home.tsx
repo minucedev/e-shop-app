@@ -9,7 +9,7 @@ import {
   Image,
   StatusBar,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, Feather } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 
@@ -115,24 +115,31 @@ const Home = () => {
         </Text>
         {/* Search Bar */}
         <View className="flex-row items-center mt-4">
-          <TouchableOpacity onPress={() => handleSearch(searchText)}>
-            <Ionicons
-              name="search"
-              size={24}
-              color="#222"
-              style={{ marginRight: 8 }}
-            />
+          <View className="flex-1">
+            <View className="flex-row items-center bg-gray-100 rounded-full px-4 h-12">
+              <TouchableOpacity onPress={() => handleSearch(searchText)}>
+                <Ionicons
+                  name="search"
+                  size={24}
+                  color="#222"
+                  style={{ marginRight: 8 }}
+                />
+              </TouchableOpacity>
+              <TextInput
+                className="flex-1 text-gray-700"
+                placeholder="Tìm kiếm sản phẩm..."
+                placeholderTextColor="#888"
+                style={{ borderWidth: 0, backgroundColor: "transparent" }}
+                value={searchText}
+                onChangeText={setSearchText}
+                onSubmitEditing={(e) => handleSearch(e.nativeEvent.text)}
+                returnKeyType="search"
+              />
+            </View>
+          </View>
+          <TouchableOpacity className="ml-4">
+            <Feather name="filter" size={28} color="#222" />
           </TouchableOpacity>
-          <TextInput
-            className="flex-1 h-12 bg-gray-100 rounded-full px-4 text-gray-700"
-            placeholder="Search for equipments..."
-            placeholderTextColor="#6b7280"
-            value={searchText}
-            onChangeText={setSearchText}
-            onSubmitEditing={(e) => handleSearch(e.nativeEvent.text)}
-            returnKeyType="search"
-            style={{ borderWidth: 0, backgroundColor: "transparent" }}
-          />
         </View>
       </View>
 
