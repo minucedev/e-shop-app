@@ -3,8 +3,8 @@ import React from 'react'
 
 const shop = () => {
   return (
-    <View>
-      <Text>shop</Text>
+    <View style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}> 
+      <Text>SHOP</Text>
     </View>
   )
 }
