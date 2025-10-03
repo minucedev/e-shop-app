@@ -11,28 +11,10 @@ import {
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProduct } from "@/contexts/ProductContext";
 import { useRouter } from "expo-router";
 
-// Dữ liệu mẫu - cấu trúc dễ mở rộng cho API
-const PRODUCTS_DATA = [
-  {
-    id: "1",
-    name: "AMD RYZEN 9",
-    description: "Unleash Performance",
-    price: "$299",
-    image:
-      "https://nguyencongpc.vn/media/product/250-27037-242872903-c_ryzen_9_9900x3d_3dpib.jpg",
-  },
-  {
-    id: "2",
-    name: "Intel Core i7 12700",
-    description: "Beyond Limits",
-    price: "$249",
-    image:
-      "https://product.hstatic.net/200000320233/product/i7_01bbf06595c041489008499b74309cd5_1024x1024.jpg",
-  },
-  // Có thể thêm nhiều sản phẩm khác
-];
+// ...existing code...
 
 const categories = [
   { icon: "phone-portrait", label: "Phones" },
@@ -71,8 +53,11 @@ const featuredProducts = [
 
 const Home = () => {
   const router = useRouter();
+  // Lấy sản phẩm từ ProductContext
+  const { products, isLoading } = useProduct();
+
   // Render mỗi item sản phẩm trong horizontal list
-  const renderProductItem = ({ item }: { item: (typeof PRODUCTS_DATA)[0] }) => (
+  const renderProductItem = ({ item }: { item: (typeof products)[0] }) => (
     <TouchableOpacity className="mr-4 w-48 bg-gray-50 rounded-lg p-4 shadow-sm">
       <View className="bg-blue-100 h-32 rounded-md mb-2 items-center justify-center overflow-hidden">
         <Image
@@ -178,7 +163,7 @@ const Home = () => {
             Popular Now
           </Text>
           <FlatList
-            data={featuredProducts}
+            data={products.slice(6, 9)}
             renderItem={({ item }) => (
               <TouchableOpacity className="mr-4 w-40 bg-white rounded-lg p-3 shadow-sm">
                 <View className="bg-blue-50 h-24 rounded-md mb-2 items-center justify-center overflow-hidden">
@@ -219,7 +204,7 @@ const Home = () => {
 
           {/* Horizontal Product List */}
           <FlatList
-            data={PRODUCTS_DATA}
+            data={products}
             renderItem={renderProductItem}
             keyExtractor={(item) => item.id}
             horizontal

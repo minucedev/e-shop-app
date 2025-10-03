@@ -4,6 +4,8 @@ import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { fonts } from "@/constants/fonts";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ProductProvider } from "@/contexts/ProductContext";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -43,24 +45,28 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <AuthGate>
-        <Stack screenOptions={{ headerShown: false }}>
-          {/* Initial routing screen */}
-          <Stack.Screen name="index" options={{ headerShown: false }} />
+      <ProductProvider>
+        <FavoritesProvider>
+          <AuthGate>
+            <Stack screenOptions={{ headerShown: false }}>
+              {/* Initial routing screen */}
+              <Stack.Screen name="index" options={{ headerShown: false }} />
 
-          {/* Welcome screen (root) */}
-          <Stack.Screen name="welcome" options={{ headerShown: false }} />
+              {/* Welcome screen (root) */}
+              <Stack.Screen name="welcome" options={{ headerShown: false }} />
 
-          {/* Auth screens group */}
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              {/* Auth screens group */}
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
 
-          {/* Main app screens group */}
-          <Stack.Screen name="(app)" options={{ headerShown: false }} />
+              {/* Main app screens group */}
+              <Stack.Screen name="(app)" options={{ headerShown: false }} />
 
-          {/* Global screens */}
-          <Stack.Screen name="+not-found" />
-        </Stack>
-      </AuthGate>
+              {/* Global screens */}
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </AuthGate>
+        </FavoritesProvider>
+      </ProductProvider>
     </AuthProvider>
   );
 }
