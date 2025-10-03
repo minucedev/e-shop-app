@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 // Dữ liệu mẫu giỏ hàng - sử dụng dữ liệu từ home.tsx
 const CART_ITEMS = [
@@ -34,6 +35,7 @@ const CART_ITEMS = [
 
 const Cart = () => {
   const [cartItems, setCartItems] = React.useState(CART_ITEMS);
+  const router = useRouter();
 
   // Tính tổng số lượng sản phẩm
   const getTotalItems = () => {
@@ -206,8 +208,13 @@ const Cart = () => {
               className="bg-blue-600 py-4 rounded-2xl items-center"
               activeOpacity={0.8}
               onPress={() => {
-                // TODO: Navigate to checkout/payment screen
-                console.log("Proceeding to checkout...");
+                // Chuyển sang trang thanh toán, truyền dữ liệu giỏ hàng
+                router.push({
+                  pathname: "/(app)/(screens)/cart-purchase",
+                  params: {
+                    cartItems: JSON.stringify(cartItems),
+                  },
+                });
               }}
             >
               <Text className="text-white text-lg font-bold">
