@@ -36,7 +36,7 @@ const Profile = () => {
           </Text>
           <TouchableOpacity
             className="ml-3 p-2 rounded-full bg-blue-50"
-            onPress={() => router.push("/(app)/edit-profile")}
+            onPress={() => router.push("/(app)/(screens)/edit-profile")}
             activeOpacity={0.7}
           >
             <Ionicons name="pencil" size={26} color="#007AFF" />
@@ -49,7 +49,7 @@ const Profile = () => {
         <ProfileButton
           icon={<Ionicons name="location-outline" size={28} color="#007AFF" />}
           label="Address Book"
-          onPress={() => router.push("/(app)/edit-address")}
+          onPress={() => router.push("/(app)/(screens)/edit-address")}
         />
         <ProfileButton
           icon={<Ionicons name="list-outline" size={28} color="#007AFF" />}
