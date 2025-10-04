@@ -94,30 +94,40 @@ const Cart = () => {
 
   // Component render từng item trong giỏ hàng
   const renderCartItem = ({ item }: { item: (typeof CART_ITEMS)[0] }) => (
-    <View className="bg-white mx-4 mb-4 p-4 rounded-2xl shadow-sm border border-gray-100">
-      <View className="flex-row">
-        {/* Ảnh sản phẩm */}
-        <Image
-          source={{ uri: item.image }}
-          className="w-20 h-20 rounded-xl bg-gray-100"
-          resizeMode="contain"
-        />
+    <View className="bg-white mx-4 mb-4 rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+      <View className="flex-row p-4">
+        {/* Product Image */}
+        <View className="bg-gray-50 w-20 h-20 rounded-xl items-center justify-center overflow-hidden">
+          <Image
+            source={{ uri: item.image }}
+            className="w-full h-full"
+            resizeMode="cover"
+          />
+        </View>
 
-        {/* Thông tin sản phẩm */}
+        {/* Product Info */}
         <View className="flex-1 ml-4">
-          {/* Tên sản phẩm */}
-          <Text className="text-base font-bold text-gray-900 uppercase mb-1">
+          {/* Product Name */}
+          <Text
+            className="text-base font-bold text-gray-900 mb-1"
+            numberOfLines={1}
+          >
             {item.name}
           </Text>
 
-          {/* Giá sản phẩm */}
-          <Text className="text-lg font-bold text-gray-700 mb-3">
+          {/* Product Description */}
+          <Text className="text-xs text-gray-500 mb-2" numberOfLines={1}>
+            {item.description}
+          </Text>
+
+          {/* Price */}
+          <Text className="text-lg font-bold text-blue-600 mb-3">
             {item.price}
           </Text>
 
-          {/* Bộ điều chỉnh số lượng */}
+          {/* Quantity Controls */}
           <View className="flex-row items-center">
-            {/* Nút giảm */}
+            {/* Decrease Button */}
             <TouchableOpacity
               onPress={() => decreaseQuantity(item.id)}
               className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
@@ -126,18 +136,18 @@ const Cart = () => {
               <Ionicons name="remove" size={16} color="#666" />
             </TouchableOpacity>
 
-            {/* Số lượng */}
+            {/* Quantity */}
             <Text className="mx-4 text-base font-semibold text-gray-900 min-w-[20px] text-center">
               {item.quantity}
             </Text>
 
-            {/* Nút tăng */}
+            {/* Increase Button */}
             <TouchableOpacity
               onPress={() => increaseQuantity(item.id)}
-              className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
+              className="w-8 h-8 bg-blue-600 rounded-full items-center justify-center"
               activeOpacity={0.7}
             >
-              <Ionicons name="add" size={16} color="#666" />
+              <Ionicons name="add" size={16} color="white" />
             </TouchableOpacity>
           </View>
         </View>

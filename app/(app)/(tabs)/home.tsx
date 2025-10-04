@@ -9,89 +9,105 @@ import {
   Image,
   StatusBar,
 } from "react-native";
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProduct } from "@/contexts/ProductContext";
+import { usePromotion, IPromotion } from "@/contexts/PromotionContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import { useRouter } from "expo-router";
-
-// ...existing code...
-
-const categories = [
-  { icon: "phone-portrait", label: "Phones" },
-  { icon: "laptop", label: "Laptops" },
-  { icon: "tablet-portrait", label: "Tablets" },
-  { icon: "watch", label: "Watches" },
-  { icon: "headset", label: "Accessories" },
-  { icon: "tv", label: "TVs" },
-  { icon: "game-controller", label: "Gaming" },
-  { icon: "camera", label: "Cameras" },
-];
-
-const featuredProducts = [
-  {
-    id: "1",
-    name: "iPhone 17 Pro Max",
-    price: "$1.990",
-    image:
-      "https://cdn2.cellphones.com.vn/358x/media/catalog/product/i/p/iphone-17-pro-256-gb.png",
-  },
-  {
-    id: "2",
-    name: "Samsung Galaxy S24 Ultra",
-    price: "$1.980",
-    image:
-      "https://cdn2.cellphones.com.vn/insecure/rs:fill:0:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/s/s/ss-s24-ultra-xam-222.png",
-  },
-  {
-    id: "3",
-    name: "MacBook Air M3 2024",
-    price: "$2.300",
-    image:
-      "https://cdn2.cellphones.com.vn/x/media/catalog/product/m/b/mba13-m3-midnight-gallery1-202402_3_1_2_1.jpg",
-  },
-];
 
 const Home = () => {
   const router = useRouter();
-  // Lấy sản phẩm từ ProductContext
+  // Get products from ProductContext
   const { products, isLoading } = useProduct();
-
-  // Render mỗi item sản phẩm trong horizontal list
   const { formatPrice } = useProduct();
 
-  const renderProductItem = ({ item }: { item: (typeof products)[0] }) => (
-    <TouchableOpacity className="mr-4 w-48 bg-gray-50 rounded-lg p-4 shadow-sm">
-      <View className="bg-blue-100 h-32 rounded-md mb-2 items-center justify-center overflow-hidden">
-        <Image
-          source={{ uri: item.image }}
-          className="w-full h-full rounded"
-          resizeMode="cover"
-        />
+  // Get promotions from PromotionContext
+  const { getPromotions } = usePromotion();
+  const [promotions, setPromotions] = React.useState<IPromotion[]>([]);
+  const [loadingPromos, setLoadingPromos] = React.useState(true);
+
+  // Get favorites from FavoritesContext
+  const { isFavorite, toggleFavorite } = useFavorites();
+
+  React.useEffect(() => {
+    getPromotions().then((data) => {
+      setPromotions(data);
+      setLoadingPromos(false);
+    });
+  }, []);
+
+  const renderProductItem = ({ item }: { item: (typeof products)[0] }) => {
+    const isItemFavorite = isFavorite(item.id);
+    return (
+      <TouchableOpacity className="mr-4 w-48 bg-white rounded-xl shadow-lg border border-gray-100">
+        {/* Product Image */}
+        <View className="relative">
+          <View className="bg-gray-50 w-32 h-32 rounded-t-xl items-center justify-center overflow-hidden">
+            <Image
+              source={{ uri: item.image }}
+              className="w-full h-full"
+              resizeMode="cover"
+            />
+          </View>
+          {/* Favorite Icon */}
+          <TouchableOpacity 
+            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
+            onPress={(e) => {
+              e.stopPropagation();
+              toggleFavorite(item.id.toString());
+            }}
+          >
+            <Ionicons 
+              name={isItemFavorite ? "heart" : "heart-outline"} 
+              size={25} 
+              color={isItemFavorite ? "#e74c3c" : "#666"} 
+            />
+          </TouchableOpacity>
+        </View>
+
+      {/* Product Info */}
+      <View className="p-4">
+        <Text
+          className="text-base font-bold text-gray-900 mb-1"
+          numberOfLines={1}
+        >
+          {item.name}
+        </Text>
+        <Text className="text-xs text-gray-500 mb-2" numberOfLines={2}>
+          {item.description}
+        </Text>
+
+        {/* Price */}
+        <Text className="text-lg font-bold text-blue-600">
+          {formatPrice(item.price)}
+        </Text>
       </View>
-      <Text className="text-lg font-bold text-gray-900">{item.name}</Text>
-      <Text className="text-sm text-gray-600 mb-1">{item.description}</Text>
-      <Text className="text-base font-semibold text-gray-600">
-        {formatPrice(item.price)}
-      </Text>
     </TouchableOpacity>
-  );
+    );
+  };
 
   const { user } = useAuth();
 
   const [searchText, setSearchText] = React.useState("");
 
-  // Xử lý tìm kiếm
+  // Handle search - navigate to shop with search query
   const handleSearch = (text: string) => {
-    // TODO: Tích hợp API tìm kiếm sản phẩm ở đây
-    console.log("Tìm kiếm:", text);
+    if (text.trim()) {
+      // Use router.push with query string
+      router.push(
+        `/(app)/(tabs)/shop?searchQuery=${encodeURIComponent(text.trim())}`
+      );
+      setSearchText(""); // Clear search text after navigation
+    }
   };
 
   return (
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
-      {/* Status Bar và Header */}
+      {/* Status Bar and Header */}
       <View className="pt-12 px-4 pb-4 bg-white">
-        <Text className="text-2xl font-bold text-gray-900 mt-2">
+        <Text className="text-3xl font-bold text-gray-900 mt-2">
           {(() => {
             const hour = new Date().getHours();
             if (hour < 12) return "Good morning";
@@ -114,7 +130,7 @@ const Home = () => {
               </TouchableOpacity>
               <TextInput
                 className="flex-1 text-gray-700"
-                placeholder="Tìm kiếm sản phẩm..."
+                placeholder="Search products..."
                 placeholderTextColor="#888"
                 style={{ borderWidth: 0, backgroundColor: "transparent" }}
                 value={searchText}
@@ -124,40 +140,74 @@ const Home = () => {
               />
             </View>
           </View>
-          <TouchableOpacity className="ml-4">
-            <Feather name="filter" size={28} color="#222" />
-          </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* ALIENWARE Banner */}
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => router.push("/(app)/(tabs)/shop")}
-          className="mx-4 mt-2 rounded-2xl overflow-hidden"
-        >
-          <View className="flex-row items-center p-6 bg-gray-400 rounded-2xl">
-            {/* Hình ảnh bên trái */}
-            <Image
-              source={{
-                uri: "https://hungphatlaptop.com/wp-content/uploads/2023/07/Alienware-Aurora-R15-Gaming-Desktop-2023-H2.jpeg",
-              }}
-              className="w-24 h-24 rounded-xl mr-4 bg-white"
-              resizeMode="cover"
+        {/* Promotion Banner Section */}
+        <View className="mx-4 mt-2">
+          <Text className="text-lg font-bold text-gray-900 mb-2">
+            Promotion Events
+          </Text>
+          {loadingPromos ? (
+            <Text className="text-gray-500">Loading...</Text>
+          ) : (
+            <FlatList
+              data={promotions}
+              horizontal
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  className="mr-3 w-52"
+                  activeOpacity={0.85}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(app)/(screens)/promotion-detail",
+                      params: { id: item.id },
+                    })
+                  }
+                >
+                  <View className="bg-blue-100 rounded-xl p-4 relative overflow-hidden shadow-md">
+                    {/* Diagonal stripe background pattern */}
+                    <View className="absolute inset-0 opacity-20">
+                      <View className="absolute w-full h-3 bg-blue-300 top-2 -left-6 right-6 transform -rotate-12"></View>
+                      <View className="absolute w-full h-3 bg-blue-300 top-8 -left-6 right-6 transform -rotate-12"></View>
+                      <View className="absolute w-full h-3 bg-blue-300 top-14 -left-6 right-6 transform -rotate-12"></View>
+                      <View className="absolute w-full h-3 bg-blue-300 top-20 -left-6 right-6 transform -rotate-12"></View>
+                    </View>
+
+                    {/* Content */}
+                    <View className="z-10">
+                      <View className="mb-2">
+                        <Text className="text-2xl font-extrabold text-blue-800 mb-1">
+                          {item.discountType === "PERCENTAGE"
+                            ? `${item.discountValue}% OFF`
+                            : `${Math.round(item.discountValue / 1000)}K OFF`}
+                        </Text>
+                        <Text
+                          className="text-sm font-medium text-blue-700"
+                          numberOfLines={2}
+                        >
+                          {item.name
+                            .replace(/^\d+% Off /, "")
+                            .replace(/^\d+K Off /, "")}
+                        </Text>
+                      </View>
+
+                      <View className="bg-blue-800 rounded-full px-4 py-2 self-start">
+                        <Text className="text-sm font-bold text-white">
+                          SHOP NOW
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+              contentContainerStyle={{ paddingRight: 16 }}
             />
-            {/* Nội dung chữ */}
-            <View className="flex-1">
-              <Text className="text-white text-xl font-bold">
-                ALIENWARE GAMINGS
-              </Text>
-              <Text className="text-white text-lg font-semibold">DESKTOPS</Text>
-              <Text className="text-white text-base mt-1">
-                Starting at $1,999
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+          )}
+        </View>
 
         {/* Popular Now Section */}
         <View className="px-4 mt-6">
@@ -166,26 +216,54 @@ const Home = () => {
           </Text>
           <FlatList
             data={products.slice(6, 9)}
-            renderItem={({ item }) => (
-              <TouchableOpacity className="mr-4 w-40 bg-white rounded-lg p-3 shadow-sm">
-                <View className="bg-blue-50 h-24 rounded-md mb-2 items-center justify-center overflow-hidden">
-                  <Image
-                    source={{ uri: item.image }}
-                    className="w-full h-full rounded"
-                    resizeMode="cover"
-                  />
+            renderItem={({ item }) => {
+              const isItemFavorite = isFavorite(item.id);
+              return (
+                <TouchableOpacity className="mr-4 w-40 bg-white rounded-xl shadow-lg border border-gray-100">
+                  {/* Product Image */}
+                  <View className="relative">
+                    <View className="bg-gray-50 h-28 rounded-t-xl items-center justify-center overflow-hidden">
+                      <Image
+                        source={{ uri: item.image }}
+                        className="w-full h-full"
+                        resizeMode="cover"
+                      />
+                    </View>
+                    {/* Popular Badge */}
+                    <View className="absolute top-2 left-2 bg-red-500 rounded-full px-2 py-1">
+                      <Text className="text-xs font-bold text-white">HOT</Text>
+                    </View>
+                    {/* Favorite Icon */}
+                    <TouchableOpacity 
+                      className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(item.id.toString());
+                      }}
+                    >
+                      <Ionicons 
+                        name={isItemFavorite ? "heart" : "heart-outline"} 
+                        size={25} 
+                        color={isItemFavorite ? "#e74c3c" : "#666"} 
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                {/* Product Info */}
+                <View className="p-3">
+                  <Text
+                    className="text-sm font-bold text-gray-900 mb-1"
+                    numberOfLines={1}
+                  >
+                    {item.name}
+                  </Text>
+                  <Text className="text-base font-bold text-blue-600">
+                    {formatPrice(item.price)}
+                  </Text>
                 </View>
-                <Text
-                  className="text-base font-bold text-gray-900"
-                  numberOfLines={1}
-                >
-                  {item.name}
-                </Text>
-                <Text className="text-sm font-semibold text-blue-700 mt-1">
-                  {formatPrice(item.price)}
-                </Text>
               </TouchableOpacity>
-            )}
+              );
+            }}
             keyExtractor={(item) => item.id.toString()}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -215,7 +293,7 @@ const Home = () => {
           />
         </View>
 
-        {/* Thêm khoảng trống ở cuối để không bị bottom navigation che */}
+        {/* Add space at bottom to avoid bottom navigation overlap */}
         <View className="h-10" />
       </ScrollView>
     </View>

@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import React from "react";
 import { Ionicons, Feather } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
 import {
   useProduct,
   ProductFilter,
@@ -18,6 +19,9 @@ import {
 import { useFavorites } from "@/contexts/FavoritesContext";
 
 const Shop = () => {
+  // Lấy search params từ navigation
+  const { searchQuery } = useLocalSearchParams();
+
   // Lấy sản phẩm từ ProductContext
   const {
     products,
@@ -42,10 +46,18 @@ const Shop = () => {
   const [currentFilters, setCurrentFilters] = React.useState<ProductFilter>({});
   const [currentSort, setCurrentSort] = React.useState<SortOption>("name-asc");
 
+  // Xử lý search query từ navigation params
+  React.useEffect(() => {
+    if (searchQuery && typeof searchQuery === "string") {
+      console.log("Received searchQuery:", searchQuery);
+      setSearchText(searchQuery);
+    }
+  }, [searchQuery]);
+
   // Cập nhật danh sách sản phẩm khi products thay đổi
   React.useEffect(() => {
     applyFiltersAndSort();
-  }, [products, currentFilters, currentSort]);
+  }, [products, currentFilters, currentSort, searchText]);
 
   // Áp dụng filter và sort
   const applyFiltersAndSort = () => {
@@ -118,7 +130,7 @@ const Shop = () => {
               </TouchableOpacity>
               <TextInput
                 className="flex-1 text-gray-700"
-                placeholder="Tìm kiếm sản phẩm..."
+                placeholder="Search products..."
                 placeholderTextColor="#888"
                 style={{ borderWidth: 0, backgroundColor: "transparent" }}
                 value={searchText}
@@ -231,49 +243,55 @@ const Shop = () => {
             const isItemFavorite = isFavorite(item.id);
             return (
               <TouchableOpacity
-                className="bg-white rounded-2xl shadow p-3 w-[48%] relative"
+                className="bg-white rounded-xl shadow-lg border border-gray-100 w-[48%]"
                 activeOpacity={0.8}
                 onPress={() => {
                   /* TODO: chuyển sang trang chi tiết sản phẩm */
                 }}
               >
-                {/* Icon yêu thích */}
-                <TouchableOpacity
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    right: 10,
-                    zIndex: 1,
-                  }}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleToggleFavorite(item.id.toString());
-                  }}
-                >
-                  <Ionicons
-                    name={isItemFavorite ? "heart" : "heart-outline"}
-                    size={22}
-                    color={isItemFavorite ? "#e74c3c" : "#444"}
-                  />
-                </TouchableOpacity>
-                {/* Ảnh sản phẩm */}
-                <Image
-                  source={{ uri: item.image }}
-                  className="w-full h-24 rounded-xl mb-2"
-                  resizeMode="contain"
-                />
-                {/* Tên sản phẩm */}
-                <Text className="font-bold text-base text-gray-900 mb-1 uppercase">
-                  {item.name}
-                </Text>
-                {/* Mô tả ngắn */}
-                <Text className="text-sm text-gray-500 mb-1">
-                  {item.description}
-                </Text>
-                {/* Giá sản phẩm */}
-                <Text className="text-lg font-bold text-gray-600">
-                  {formatPrice(item.price)}
-                </Text>
+                {/* Product Image */}
+                <View className="relative">
+                  <View className="bg-gray-50 w-28.8 h-32 rounded-xl mr-5 items-center justify-center overflow-hidden ">
+                    <Image
+                      source={{ uri: item.image }}
+                      className="w-full h-full"
+                      resizeMode="cover"
+                    />
+                  </View>
+                  {/* Favorite Icon */}
+                  <TouchableOpacity
+                    className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavorite(item.id.toString());
+                    }}
+                  >
+                    <Ionicons
+                      name={isItemFavorite ? "heart" : "heart-outline"}
+                      size={25}
+                      color={isItemFavorite ? "#e74c3c" : "#666"}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Product Info */}
+                <View className="p-4">
+                  <Text
+                    className="text-base font-bold text-gray-900 mb-1"
+                    numberOfLines={1}
+                  >
+                    {item.name}
+                  </Text>
+                  <Text
+                    className="text-xs text-gray-500 mb-2"
+                    numberOfLines={2}
+                  >
+                    {item.description}
+                  </Text>
+                  <Text className="text-lg font-bold text-blue-600">
+                    {formatPrice(item.price)}
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           }}

@@ -126,84 +126,81 @@ const Favorites = () => {
 
               return (
                 <TouchableOpacity
-                  className="bg-white rounded-2xl shadow p-3 w-[48%] relative"
+                  className="bg-white rounded-xl shadow-lg border border-gray-100 w-[48%]"
                   activeOpacity={0.8}
                   onPress={() => {
                     /* TODO: chuyển sang trang chi tiết sản phẩm */
                   }}
                 >
-                  {/* Icon yêu thích - đã được chọn */}
-                  <TouchableOpacity
-                    style={{
-                      position: "absolute",
-                      top: 10,
-                      right: 10,
-                      zIndex: 1,
-                    }}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleRemoveFromFavorites(item.id.toString());
-                    }}
-                  >
-                    <Ionicons name="heart" size={22} color="#e74c3c" />
-                  </TouchableOpacity>
-
-                  {/* Badge số lượng trong giỏ hàng */}
-                  {cartQuantity > 0 && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: 10,
-                        left: 10,
-                        zIndex: 1,
-                      }}
-                      className="bg-green-500 rounded-full w-6 h-6 items-center justify-center"
-                    >
-                      <Text className="text-white text-xs font-bold">
-                        {cartQuantity}
-                      </Text>
+                  {/* Product Image */}
+                  <View className="relative">
+                    <View className="bg-gray-50 h-32 mr-5 rounded-xl items-center justify-center overflow-hidden">
+                      <Image
+                        source={{ uri: item.image }}
+                        className="w-full h-full"
+                        resizeMode="cover"
+                      />
                     </View>
-                  )}
 
-                  {/* Ảnh sản phẩm */}
-                  <Image
-                    source={{ uri: item.image }}
-                    className="w-full h-24 rounded-xl mb-2"
-                    resizeMode="contain"
-                  />
+                    {/* Favorite Icon - always filled */}
+                    <TouchableOpacity
+                      className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFromFavorites(item.id.toString());
+                      }}
+                    >
+                      <Ionicons name="heart" size={25} color="#e74c3c" />
+                    </TouchableOpacity>
 
-                  {/* Tên sản phẩm */}
-                  <Text className="font-bold text-base text-gray-900 mb-1 uppercase">
-                    {item.name}
-                  </Text>
+                    {/* Cart quantity badge */}
+                    {cartQuantity > 0 && (
+                      <View className="absolute top-2 left-2 bg-green-500 rounded-full w-6 h-6 items-center justify-center">
+                        <Text className="text-white text-xs font-bold">
+                          {cartQuantity}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
-                  {/* Mô tả ngắn */}
-                  <Text className="text-sm text-gray-500 mb-2">
-                    {item.description}
-                  </Text>
+                  {/* Product Info */}
+                  <View className="p-4">
+                    <Text
+                      className="text-base font-bold text-gray-900 mb-1"
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      className="text-xs text-gray-500 mb-2"
+                      numberOfLines={2}
+                    >
+                      {item.description}
+                    </Text>
 
-                  {/* Giá sản phẩm */}
-                  <Text className="text-lg font-bold text-gray-600 mb-2">
-                    {formatPrice(item.price)}
-                  </Text>
-
-                  {/* Nút thêm vào giỏ hàng với animation */}
-                  <TouchableOpacity
-                    className={`rounded-full p-2 self-end ${
-                      cartQuantity > 0 ? "bg-green-500" : "bg-blue-500"
-                    }`}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleAddToCart(item.id.toString());
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name={cartQuantity > 0 ? "checkmark" : "bag-add"}
-                      size={18}
-                      color="white"
-                    />
-                  </TouchableOpacity>
+                    {/* Price and Add Button */}
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-lg font-bold text-blue-600">
+                        {formatPrice(item.price)}
+                      </Text>
+                      <TouchableOpacity
+                        className={`rounded-full p-1.5 ${
+                          cartQuantity > 0 ? "bg-green-500" : "bg-blue-600"
+                        }`}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(item.id.toString());
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name={cartQuantity > 0 ? "checkmark" : "bag-add"}
+                          size={16}
+                          color="white"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </TouchableOpacity>
               );
             }}

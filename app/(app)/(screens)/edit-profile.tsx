@@ -255,22 +255,24 @@ const EditProfile = () => {
 
   return (
     <>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        className="bg-gray-50"
+      >
         {/* Header */}
-        <View className="flex-row items-center justify-center mt-8 mb-4 px-6 relative">
+        <View className="flex-row items-center justify-center p-4 bg-white border-b border-gray-200 relative">
           <TouchableOpacity
-            className="mr-4 bg-gray-100 rounded-full p-2"
             onPress={() => router.back()}
-            style={{ position: "absolute", left: 16, zIndex: 1 }}
+            className="absolute left-4 p-2"
           >
-            <Ionicons name="arrow-back" size={28} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color="#2563eb" />
           </TouchableOpacity>
-          <Text className="flex-1 text-2xl font-bold text-center text-[#222]">
+          <Text className="text-lg font-semibold text-gray-900">
             Edit Profile
           </Text>
         </View>
 
-        <View className="flex-1 bg-white px-6 pt-4 items-center">
+        <View className="flex-1 bg-gray-50 px-6 pt-4 items-center">
           {/* Avatar */}
           <TouchableOpacity
             className="mb-8 relative"
@@ -278,7 +280,7 @@ const EditProfile = () => {
             activeOpacity={0.8}
           >
             <Image
-              source={{ uri: avatar || "https://i.pravatar.cc/150?img=3" }}
+              source={{ uri: avatar || "https://i.pravatar.cc/150?img=68" }}
               className="w-28 h-28 rounded-full bg-gray-200"
             />
             <View className="absolute bottom-0 right-0 bg-blue-500 rounded-full p-2 border border-white">
@@ -287,7 +289,7 @@ const EditProfile = () => {
           </TouchableOpacity>
 
           {/* Fields */}
-          <View className="w-full mb-10">
+          <View className="w-full bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-10">
             <FieldRow
               label="Email"
               value={user?.email || ""}
