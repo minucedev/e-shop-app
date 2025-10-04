@@ -57,6 +57,8 @@ const Home = () => {
   const { products, isLoading } = useProduct();
 
   // Render mỗi item sản phẩm trong horizontal list
+  const { formatPrice } = useProduct();
+
   const renderProductItem = ({ item }: { item: (typeof products)[0] }) => (
     <TouchableOpacity className="mr-4 w-48 bg-gray-50 rounded-lg p-4 shadow-sm">
       <View className="bg-blue-100 h-32 rounded-md mb-2 items-center justify-center overflow-hidden">
@@ -69,7 +71,7 @@ const Home = () => {
       <Text className="text-lg font-bold text-gray-900">{item.name}</Text>
       <Text className="text-sm text-gray-600 mb-1">{item.description}</Text>
       <Text className="text-base font-semibold text-gray-600">
-        {item.price}
+        {formatPrice(item.price)}
       </Text>
     </TouchableOpacity>
   );
@@ -180,11 +182,11 @@ const Home = () => {
                   {item.name}
                 </Text>
                 <Text className="text-sm font-semibold text-blue-700 mt-1">
-                  {item.price}
+                  {formatPrice(item.price)}
                 </Text>
               </TouchableOpacity>
             )}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingRight: 16 }}
@@ -206,7 +208,7 @@ const Home = () => {
           <FlatList
             data={products}
             renderItem={renderProductItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingRight: 16 }}

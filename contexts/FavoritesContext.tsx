@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState } from "react";
 
 type FavoritesContextType = {
-  favoriteIds: string[];
-  isFavorite: (productId: string) => boolean;
-  toggleFavorite: (productId: string) => void;
-  addToFavorites: (productId: string) => void;
-  removeFromFavorites: (productId: string) => void;
+  favoriteIds: (string | number)[];
+  isFavorite: (productId: string | number) => boolean;
+  toggleFavorite: (productId: string | number) => void;
+  addToFavorites: (productId: string | number) => void;
+  removeFromFavorites: (productId: string | number) => void;
   clearFavorites: () => void;
   favoritesCount: number;
 };
@@ -19,41 +19,52 @@ export const FavoritesProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  // State cho danh sách ID sản phẩm yêu thích
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "7",
-    "8",
-    "9",
-    "10", // Mock một số sản phẩm yêu thích ban đầu
+  // State cho danh sách ID sản phẩm yêu thích (hỗ trợ cả string và number)
+  const [favoriteIds, setFavoriteIds] = useState<(string | number)[]>([
+    1,
+    2,
+    3,
+    4,
+    5, // Mock một số sản phẩm yêu thích ban đầu
   ]);
 
+  // Normalize ID để so sánh (hỗ trợ cả string và number)
+  const normalizeId = (id: string | number) => {
+    return typeof id === "string" ? parseInt(id, 10) : id;
+  };
+
   // Kiểm tra sản phẩm có trong favorites không
-  const isFavorite = (productId: string) => favoriteIds.includes(productId);
+  const isFavorite = (productId: string | number) => {
+    const normalizedId = normalizeId(productId);
+    return favoriteIds.some((id) => normalizeId(id) === normalizedId);
+  };
 
   // Toggle trạng thái favorite
-  const toggleFavorite = (productId: string) => {
+  const toggleFavorite = (productId: string | number) => {
+    const normalizedId = normalizeId(productId);
     setFavoriteIds((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
+      prev.some((id) => normalizeId(id) === normalizedId)
+        ? prev.filter((id) => normalizeId(id) !== normalizedId)
+        : [...prev, normalizedId]
     );
   };
 
   // Thêm vào favorites
-  const addToFavorites = (productId: string) => {
+  const addToFavorites = (productId: string | number) => {
+    const normalizedId = normalizeId(productId);
     setFavoriteIds((prev) =>
-      prev.includes(productId) ? prev : [...prev, productId]
+      prev.some((id) => normalizeId(id) === normalizedId)
+        ? prev
+        : [...prev, normalizedId]
     );
   };
 
   // Xóa khỏi favorites
-  const removeFromFavorites = (productId: string) => {
-    setFavoriteIds((prev) => prev.filter((id) => id !== productId));
+  const removeFromFavorites = (productId: string | number) => {
+    const normalizedId = normalizeId(productId);
+    setFavoriteIds((prev) =>
+      prev.filter((id) => normalizeId(id) !== normalizedId)
+    );
   };
 
   // Xóa tất cả favorites

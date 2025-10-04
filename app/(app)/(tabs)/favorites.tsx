@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useProduct } from "@/contexts/ProductContext";
+import { useProduct, formatPrice } from "@/contexts/ProductContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 
 const Favorites = () => {
@@ -114,7 +114,7 @@ const Favorites = () => {
           <FlatList
             data={favoriteItems}
             numColumns={2}
-            keyExtractor={(item) => item!.id}
+            keyExtractor={(item) => item!.id.toString()}
             showsVerticalScrollIndicator={false}
             columnWrapperStyle={{
               justifyContent: "space-between",
@@ -122,7 +122,7 @@ const Favorites = () => {
             }}
             renderItem={({ item }) => {
               if (!item) return null;
-              const cartQuantity = getCartQuantity(item.id);
+              const cartQuantity = getCartQuantity(item.id.toString());
 
               return (
                 <TouchableOpacity
@@ -142,7 +142,7 @@ const Favorites = () => {
                     }}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleRemoveFromFavorites(item.id);
+                      handleRemoveFromFavorites(item.id.toString());
                     }}
                   >
                     <Ionicons name="heart" size={22} color="#e74c3c" />
@@ -184,7 +184,7 @@ const Favorites = () => {
 
                   {/* Giá sản phẩm */}
                   <Text className="text-lg font-bold text-gray-600 mb-2">
-                    {item.price}
+                    {formatPrice(item.price)}
                   </Text>
 
                   {/* Nút thêm vào giỏ hàng với animation */}
@@ -194,7 +194,7 @@ const Favorites = () => {
                     }`}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleAddToCart(item.id);
+                      handleAddToCart(item.id.toString());
                     }}
                     activeOpacity={0.8}
                   >
