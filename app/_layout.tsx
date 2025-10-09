@@ -7,8 +7,10 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { PromotionProvider } from "@/contexts/PromotionContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Toast from "react-native-toast-message";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -49,23 +51,32 @@ export default function RootLayout() {
       <ProductProvider>
         <FavoritesProvider>
           <PromotionProvider>
-            <AuthGate>
-              <Stack screenOptions={{ headerShown: false }}>
-                {/* Initial routing screen */}
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                {/* Welcome screen (root) */}
-                <Stack.Screen name="welcome" options={{ headerShown: false }} />
-                {/* Auth screens group */}
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                {/* Main app screens group */}
-                <Stack.Screen name="(app)" options={{ headerShown: false }} />
-                {/* Global screens */}
-                <Stack.Screen name="+not-found" />
-              </Stack>
-            </AuthGate>
+            <CartProvider>
+              <AuthGate>
+                <Stack screenOptions={{ headerShown: false }}>
+                  {/* Initial routing screen */}
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  {/* Welcome screen (root) */}
+                  <Stack.Screen
+                    name="welcome"
+                    options={{ headerShown: false }}
+                  />
+                  {/* Auth screens group */}
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{ headerShown: false }}
+                  />
+                  {/* Main app screens group */}
+                  <Stack.Screen name="(app)" options={{ headerShown: false }} />
+                  {/* Global screens */}
+                  <Stack.Screen name="+not-found" />
+                </Stack>
+              </AuthGate>
+            </CartProvider>
           </PromotionProvider>
         </FavoritesProvider>
       </ProductProvider>
+      <Toast />
     </AuthProvider>
   );
 }

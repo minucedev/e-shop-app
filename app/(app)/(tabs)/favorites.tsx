@@ -10,18 +10,20 @@ import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useProduct, formatPrice } from "@/contexts/ProductContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useCart } from "@/contexts/CartContext";
+import { useRouter } from "expo-router";
 
 const Favorites = () => {
+  const router = useRouter();
+
   // Lấy sản phẩm từ ProductContext
   const { products, getProductById } = useProduct();
 
   // Lấy favorites từ FavoritesContext
   const { favoriteIds, clearFavorites, removeFromFavorites } = useFavorites();
 
-  // State cho giỏ hàng (tạm thời, sau này có thể tạo CartContext)
-  const [cartItems, setCartItems] = React.useState<{ [key: string]: number }>(
-    {}
-  );
+  // Lấy cart từ CartContext
+  const { addToCart } = useCart();
 
   // Lấy danh sách sản phẩm yêu thích từ IDs
   const favoriteItems = favoriteIds
@@ -61,34 +63,11 @@ const Favorites = () => {
     );
   };
 
-  // Hàm thêm sản phẩm vào giỏ hàng với số lượng
-  const handleAddToCart = (productId: string) => {
-    const product = getProductById(productId);
-    if (!product) return;
-
-    setCartItems((prev) => ({
-      ...prev,
-      [productId]: (prev[productId] || 0) + 1,
-    }));
-
-    Alert.alert(
-      "Added to Cart",
-      `${product.name} has been added to your cart!`,
-      [
-        { text: "Continue Shopping", style: "default" },
-        {
-          text: "View Cart",
-          onPress: () => {
-            // TODO: Navigate to cart screen
-            console.log("Navigate to cart");
-          },
-        },
-      ]
-    );
+  // Hàm thêm sản phẩm vào giỏ hàng
+  const handleAddToCart = async (productId: string) => {
+    await addToCart(productId);
+    router.push("/(app)/(tabs)/cart");
   };
-
-  // Hàm kiểm tra sản phẩm đã có trong giỏ hàng chưa
-  const getCartQuantity = (productId: string) => cartItems[productId] || 0;
 
   return (
     <View className="flex-1 bg-white">
@@ -122,7 +101,6 @@ const Favorites = () => {
             }}
             renderItem={({ item }) => {
               if (!item) return null;
-              const cartQuantity = getCartQuantity(item.id.toString());
 
               return (
                 <TouchableOpacity
@@ -152,15 +130,6 @@ const Favorites = () => {
                     >
                       <Ionicons name="heart" size={25} color="#e74c3c" />
                     </TouchableOpacity>
-
-                    {/* Cart quantity badge */}
-                    {cartQuantity > 0 && (
-                      <View className="absolute top-2 left-2 bg-green-500 rounded-full w-6 h-6 items-center justify-center">
-                        <Text className="text-white text-xs font-bold">
-                          {cartQuantity}
-                        </Text>
-                      </View>
-                    )}
                   </View>
 
                   {/* Product Info */}
@@ -178,26 +147,21 @@ const Favorites = () => {
                       {item.description}
                     </Text>
 
-                    {/* Price and Add Button */}
+                    {/* Price and Add to Cart */}
                     <View className="flex-row items-center justify-between">
                       <Text className="text-lg font-bold text-blue-600">
                         {formatPrice(item.price)}
                       </Text>
+
+                      {/* Add to Cart Button */}
                       <TouchableOpacity
-                        className={`rounded-full p-1.5 ${
-                          cartQuantity > 0 ? "bg-green-500" : "bg-blue-600"
-                        }`}
-                        onPress={(e) => {
+                        className="bg-blue-500 p-2 rounded-full"
+                        onPress={async (e) => {
                           e.stopPropagation();
-                          handleAddToCart(item.id.toString());
+                          await handleAddToCart(item.id.toString());
                         }}
-                        activeOpacity={0.8}
                       >
-                        <Ionicons
-                          name={cartQuantity > 0 ? "checkmark" : "bag-add"}
-                          size={16}
-                          color="white"
-                        />
+                        <Ionicons name="add" size={16} color="white" />
                       </TouchableOpacity>
                     </View>
                   </View>

@@ -17,6 +17,8 @@ import {
   SortOption,
 } from "@/contexts/ProductContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useCart } from "@/contexts/CartContext";
+import { useRouter } from "expo-router";
 
 const Shop = () => {
   // Lấy search params từ navigation
@@ -35,6 +37,10 @@ const Shop = () => {
 
   // Lấy favorites từ FavoritesContext
   const { isFavorite, toggleFavorite } = useFavorites();
+
+  // Lấy cart từ CartContext
+  const { addToCart } = useCart();
+  const router = useRouter();
 
   // States
   const [searchText, setSearchText] = React.useState("");
@@ -288,9 +294,25 @@ const Shop = () => {
                   >
                     {item.description}
                   </Text>
-                  <Text className="text-lg font-bold text-blue-600">
-                    {formatPrice(item.price)}
-                  </Text>
+
+                  {/* Price and Cart */}
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-lg font-bold text-blue-600">
+                      {formatPrice(item.price)}
+                    </Text>
+
+                    {/* Add to Cart Button */}
+                    <TouchableOpacity
+                      className="bg-blue-500 p-2 rounded-full"
+                      onPress={async (e) => {
+                        e.stopPropagation();
+                        await addToCart(item.id.toString());
+                        router.push("/(app)/(tabs)/cart");
+                      }}
+                    >
+                      <Ionicons name="add" size={16} color="white" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </TouchableOpacity>
             );

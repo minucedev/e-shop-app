@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProduct } from "@/contexts/ProductContext";
 import { usePromotion, IPromotion } from "@/contexts/PromotionContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
 
 const Home = () => {
@@ -29,6 +30,9 @@ const Home = () => {
 
   // Get favorites from FavoritesContext
   const { isFavorite, toggleFavorite } = useFavorites();
+
+  // Get cart from CartContext
+  const { addToCart } = useCart();
 
   React.useEffect(() => {
     getPromotions().then((data) => {
@@ -51,39 +55,53 @@ const Home = () => {
             />
           </View>
           {/* Favorite Icon */}
-          <TouchableOpacity 
+          <TouchableOpacity
             className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
             onPress={(e) => {
               e.stopPropagation();
               toggleFavorite(item.id.toString());
             }}
           >
-            <Ionicons 
-              name={isItemFavorite ? "heart" : "heart-outline"} 
-              size={25} 
-              color={isItemFavorite ? "#e74c3c" : "#666"} 
+            <Ionicons
+              name={isItemFavorite ? "heart" : "heart-outline"}
+              size={25}
+              color={isItemFavorite ? "#e74c3c" : "#666"}
             />
           </TouchableOpacity>
         </View>
 
-      {/* Product Info */}
-      <View className="p-4">
-        <Text
-          className="text-base font-bold text-gray-900 mb-1"
-          numberOfLines={1}
-        >
-          {item.name}
-        </Text>
-        <Text className="text-xs text-gray-500 mb-2" numberOfLines={2}>
-          {item.description}
-        </Text>
+        {/* Product Info */}
+        <View className="p-4">
+          <Text
+            className="text-base font-bold text-gray-900 mb-1"
+            numberOfLines={1}
+          >
+            {item.name}
+          </Text>
+          <Text className="text-xs text-gray-500 mb-2" numberOfLines={2}>
+            {item.description}
+          </Text>
 
-        {/* Price */}
-        <Text className="text-lg font-bold text-blue-600">
-          {formatPrice(item.price)}
-        </Text>
-      </View>
-    </TouchableOpacity>
+          {/* Price and Cart */}
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-bold text-blue-600">
+              {formatPrice(item.price)}
+            </Text>
+
+            {/* Add to Cart Button */}
+            <TouchableOpacity
+              className="bg-blue-500 p-2 rounded-full"
+              onPress={async (e) => {
+                e.stopPropagation();
+                await addToCart(item.id.toString());
+                router.push("/(app)/(tabs)/cart");
+              }}
+            >
+              <Ionicons name="add" size={16} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -234,34 +252,48 @@ const Home = () => {
                       <Text className="text-xs font-bold text-white">HOT</Text>
                     </View>
                     {/* Favorite Icon */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
                       onPress={(e) => {
                         e.stopPropagation();
                         toggleFavorite(item.id.toString());
                       }}
                     >
-                      <Ionicons 
-                        name={isItemFavorite ? "heart" : "heart-outline"} 
-                        size={25} 
-                        color={isItemFavorite ? "#e74c3c" : "#666"} 
+                      <Ionicons
+                        name={isItemFavorite ? "heart" : "heart-outline"}
+                        size={25}
+                        color={isItemFavorite ? "#e74c3c" : "#666"}
                       />
                     </TouchableOpacity>
                   </View>
 
-                {/* Product Info */}
-                <View className="p-3">
-                  <Text
-                    className="text-sm font-bold text-gray-900 mb-1"
-                    numberOfLines={1}
-                  >
-                    {item.name}
-                  </Text>
-                  <Text className="text-base font-bold text-blue-600">
-                    {formatPrice(item.price)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                  {/* Product Info */}
+                  <View className="p-3">
+                    <Text
+                      className="text-sm font-bold text-gray-900 mb-1"
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-base font-bold text-blue-600">
+                        {formatPrice(item.price)}
+                      </Text>
+
+                      {/* Add to Cart Button */}
+                      <TouchableOpacity
+                        className="bg-blue-500 p-1.5 rounded-full"
+                        onPress={async (e) => {
+                          e.stopPropagation();
+                          await addToCart(item.id.toString());
+                          router.push("/(app)/(tabs)/cart");
+                        }}
+                      >
+                        <Ionicons name="add" size={14} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableOpacity>
               );
             }}
             keyExtractor={(item) => item.id.toString()}
@@ -281,10 +313,11 @@ const Home = () => {
               <Text className="text-blue-600 font-semibold">See All</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Horizontal Product List */}
           <FlatList
-            data={products}
+            data={
+              // Lấy 5 sản phẩm random theo id
+              [...products].sort(() => Math.random() - 0.5).slice(0, 5)
+            }
             renderItem={renderProductItem}
             keyExtractor={(item) => item.id.toString()}
             horizontal
