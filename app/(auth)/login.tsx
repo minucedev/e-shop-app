@@ -56,27 +56,36 @@ const Login = () => {
         console.log("Đang gọi signIn với:", email, password);
         await signIn(email, password);
         console.log("Đăng nhập thành công");
+        // Clear any previous errors
+        setErrors({ email: "", password: "" });
         // Nếu muốn redirect sau khi đăng nhập thành công, chỉ gọi router.replace ở đây
       } catch (error) {
         console.log("Login error:", error);
         const errorMessage =
           error instanceof Error ? error.message : "Đăng nhập thất bại";
-        // Hiển thị popup lỗi
-        Alert.alert("Đăng nhập thất bại", errorMessage);
+        
+        // Set error to password field to show below password input
         setErrors({
           email: "",
           password: errorMessage,
         });
+        
+        // Also show alert for immediate user feedback
+        Alert.alert("Đăng nhập thất bại", errorMessage, [
+          {
+            text: "OK",
+            onPress: () => {
+              // Focus back to email input for retry
+              setPassword("");
+            }
+          }
+        ]);
       }
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Hiển thị lỗi xác thực toàn cục nếu có */}
-      {hasError && errorMessage ? (
-        <Text style={styles.errorText}>{errorMessage}</Text>
-      ) : null}
       {canGoBack && (
         <TouchableOpacity
           style={styles.backButtonWrapper}

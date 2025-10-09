@@ -185,7 +185,7 @@ const Signup = () => {
       });
 
       // Điều hướng vào app chính (chọn screen phù hợp)
-      router.replace("/(app)/(tabs)/home"); 
+      router.replace("/(app)/(tabs)/home");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Signup failed";
       setErrors((prev) => ({ ...prev, email: message }));
@@ -484,10 +484,15 @@ const Signup = () => {
         {user && (
           <View style={styles.userInfoContainer}>
             <Text style={styles.userInfoTitle}>Thông tin tài khoản:</Text>
-            <Text style={styles.userInfoText}>Tên: {user.name}</Text>
+            <Text style={styles.userInfoText}>
+              Tên: {user.firstName} {user.lastName}
+            </Text>
             <Text style={styles.userInfoText}>Email: {user.email}</Text>
             <Text style={styles.userInfoText}>
-              Ngày sinh: {formatDate(new Date(user.dateOfBirth))}
+              Ngày sinh:{" "}
+              {user.dateOfBirth
+                ? formatDate(new Date(user.dateOfBirth))
+                : "Chưa cập nhật"}
             </Text>
             <Text style={styles.userInfoText}>SĐT: {user.phone}</Text>
 
