@@ -23,9 +23,9 @@ const CartPurchase = () => {
 
   // Thông tin giao hàng chỉ hiển thị, không chỉnh sửa
   const deliveryInfo = {
-    name: user?.name || "Minuce",
-    email: user?.email || "minuce@mail.com",
-    address: "xx, Da Nang, Viet Nam", // Không lấy từ user vì không có trường address
+    name: user?.firstName || "Cannot get name",
+    email: user?.email || "Cannot get email",
+    address: user?.address || "Cannot get address",
   };
 
   return (
@@ -145,7 +145,7 @@ const CartPurchase = () => {
         {(() => {
           const subtotal = parsedCartItems.reduce(
             (total: number, item: { price: string; quantity: number }) => {
-              const price = parseFloat(item.price.replace("$", ""));
+              const price = parseFloat((item.price || "").replace("$", ""));
               return total + price * item.quantity;
             },
             0
