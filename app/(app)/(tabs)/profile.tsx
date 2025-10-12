@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getFullName } from "@/utils/userUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
@@ -37,12 +38,16 @@ const Profile = () => {
   const { user, signOut } = useAuth();
   const router = useRouter();
 
-  // Giả định dữ liệu người dùng được lấy từ AuthContext
+  // Dữ liệu người dùng từ AuthContext với API thực tế
   const userProfile = {
-    name: user?.name || "Robi",
-    phone: user?.phone || "8967452743",
-    email: user?.email || "robi123@gmail.com",
-    avatar: user?.avatar || "https://i.pravatar.cc/150?img=68",
+    name: user ? getFullName(user) : "Guest User",
+    phone: user?.phone || "No phone number",
+    email: user?.email || "No email",
+    avatar: "https://i.pravatar.cc/150?img=68", // Tạm thời dùng avatar mặc định
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    address: user?.address || "No address",
+    dateOfBirth: user?.dateOfBirth || "No date of birth",
   };
 
   const handleLogout = () => {

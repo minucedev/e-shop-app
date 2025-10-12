@@ -18,7 +18,9 @@ import { useAuth } from "@/contexts/AuthContext"; // ← ADDED
 
 // ← Thêm interface ở đầu component
 interface SignupErrors {
-  name: string;
+  firstName: string;
+  lastName: string;
+  address: string;
   dateOfBirth: string;
   email: string;
   password: string;
@@ -40,7 +42,9 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // ← Thêm các state mới
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [address, setAddress] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -50,7 +54,9 @@ const Signup = () => {
   const [phone, setPhone] = useState("");
 
   const [errors, setErrors] = useState<SignupErrors>({
-    name: "",
+    firstName: "",
+    lastName: "",
+    address: "",
     dateOfBirth: "",
     email: "",
     password: "",
@@ -81,7 +87,9 @@ const Signup = () => {
 
   const validateInputs = () => {
     const newErrors = {
-      name: "",
+      firstName: "",
+      lastName: "",
+      address: "",
       dateOfBirth: "",
       email: "",
       password: "",
@@ -90,12 +98,30 @@ const Signup = () => {
     };
     let isValid = true;
 
-    // ← Validate name
-    if (!name.trim()) {
-      newErrors.name = "Name is required";
+    // Validate firstName
+    if (!firstName.trim()) {
+      newErrors.firstName = "First name is required";
       isValid = false;
-    } else if (name.trim().length < 2) {
-      newErrors.name = "Name must be at least 2 characters";
+    } else if (firstName.trim().length < 2) {
+      newErrors.firstName = "First name must be at least 2 characters";
+      isValid = false;
+    }
+
+    // Validate lastName
+    if (!lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+      isValid = false;
+    } else if (lastName.trim().length < 2) {
+      newErrors.lastName = "Last name must be at least 2 characters";
+      isValid = false;
+    }
+
+    // Validate address
+    if (!address.trim()) {
+      newErrors.address = "Address is required";
+      isValid = false;
+    } else if (address.trim().length < 5) {
+      newErrors.address = "Address must be at least 5 characters";
       isValid = false;
     }
 
@@ -169,23 +195,27 @@ const Signup = () => {
 
     try {
       await signUp(
-        name.trim(),
+        firstName.trim(),
+        lastName.trim(),
         email.trim(),
         password,
-        formatDate(dateOfBirth),
-        phone.trim()
+        dateOfBirth.toISOString(),
+        phone.trim(),
+        address.trim()
       );
 
       console.log("Signup successful");
       console.log("Submitted payload:", {
-        name,
-        dateOfBirth: formatDate(dateOfBirth),
+        firstName,
+        lastName,
+        address,
+        dateOfBirth: dateOfBirth.toISOString(),
         email,
         phone,
       });
 
       // Điều hướng vào app chính (chọn screen phù hợp)
-      router.replace("/(app)/(tabs)/home"); 
+      router.replace("/(app)/(tabs)/home");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Signup failed";
       setErrors((prev) => ({ ...prev, email: message }));
@@ -243,7 +273,7 @@ const Signup = () => {
           {hasError && errorMessage ? (
             <Text style={styles.errorText}>{errorMessage}</Text>
           ) : null}
-          {/* Name Input */}
+          {/* First Name Input */}
           <View style={styles.inputContainer}>
             <Ionicons
               name="person-outline"
@@ -252,20 +282,45 @@ const Signup = () => {
             />
             <TextInput
               style={styles.textInput}
-              placeholder="Enter your full name"
+              placeholder="Enter your first name"
               placeholderTextColor={colors.secondary}
-              value={name}
+              value={firstName}
               onChangeText={(text) => {
-                setName(text);
-                if (errors.name) {
-                  setErrors({ ...errors, name: "" });
+                setFirstName(text);
+                if (errors.firstName) {
+                  setErrors({ ...errors, firstName: "" });
                 }
               }}
               autoCapitalize="words"
             />
           </View>
-          {errors.name ? (
-            <Text style={styles.errorText}>{errors.name}</Text>
+          {errors.firstName ? (
+            <Text style={styles.errorText}>{errors.firstName}</Text>
+          ) : null}
+
+          {/* Last Name Input */}
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="person-outline"
+              size={20}
+              color={colors.secondary}
+            />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter your last name"
+              placeholderTextColor={colors.secondary}
+              value={lastName}
+              onChangeText={(text) => {
+                setLastName(text);
+                if (errors.lastName) {
+                  setErrors({ ...errors, lastName: "" });
+                }
+              }}
+              autoCapitalize="words"
+            />
+          </View>
+          {errors.lastName ? (
+            <Text style={styles.errorText}>{errors.lastName}</Text>
           ) : null}
 
           {/* Date of Birth Input */}
@@ -318,6 +373,31 @@ const Signup = () => {
               minimumDate={new Date(1900, 0, 1)}
             />
           )}
+
+          {/* Address Input */}
+          <View style={styles.inputContainer}>
+            <Ionicons
+              name="location-outline"
+              size={20}
+              color={colors.secondary}
+            />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter your address"
+              placeholderTextColor={colors.secondary}
+              value={address}
+              onChangeText={(text) => {
+                setAddress(text);
+                if (errors.address) {
+                  setErrors({ ...errors, address: "" });
+                }
+              }}
+              autoCapitalize="words"
+            />
+          </View>
+          {errors.address ? (
+            <Text style={styles.errorText}>{errors.address}</Text>
+          ) : null}
 
           {/* Email Input */}
           <View style={styles.inputContainer}>
@@ -484,10 +564,15 @@ const Signup = () => {
         {user && (
           <View style={styles.userInfoContainer}>
             <Text style={styles.userInfoTitle}>Thông tin tài khoản:</Text>
-            <Text style={styles.userInfoText}>Tên: {user.name}</Text>
+            <Text style={styles.userInfoText}>
+              Tên: {user.firstName} {user.lastName}
+            </Text>
             <Text style={styles.userInfoText}>Email: {user.email}</Text>
             <Text style={styles.userInfoText}>
-              Ngày sinh: {formatDate(new Date(user.dateOfBirth))}
+              Ngày sinh:{" "}
+              {user.dateOfBirth
+                ? formatDate(new Date(user.dateOfBirth))
+                : "Chưa cập nhật"}
             </Text>
             <Text style={styles.userInfoText}>SĐT: {user.phone}</Text>
 

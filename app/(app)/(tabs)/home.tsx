@@ -132,7 +132,7 @@ const Home = () => {
             if (hour < 18) return "Good afternoon";
             return "Good evening";
           })()}{" "}
-          {user?.name}
+          {user?.firstName}
         </Text>
         {/* Search Bar */}
         <View className="flex-row items-center mt-4">
