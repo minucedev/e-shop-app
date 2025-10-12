@@ -115,17 +115,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await authApi.login({ email, password });
 
       if (!response.success || !response.data) {
-        // Improve error message for login failures
-        let errorMsg = response.error || "Login failed";
-        if (
-          errorMsg.includes("401") ||
-          errorMsg.includes("Invalid credentials")
-        ) {
-          errorMsg = "Email hoặc mật khẩu không đúng";
-        } else if (errorMsg.includes("Network")) {
-          errorMsg = "Lỗi kết nối mạng. Vui lòng kiểm tra internet";
-        }
-        throw new Error(errorMsg);
+        // Luôn hiển thị thông báo chung cho user
+        throw new Error("We couldn't find an account with that email and password. Please try again.");
       }
 
       const { accessToken, refreshToken, expiresIn } = response.data;

@@ -1,9 +1,25 @@
 // services/apiClient.ts
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TokenStorage } from "@/utils/authUtils";
+import Constants from "expo-constants";
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || "http://192.168.70.13:8081/api";
+function getApiBaseUrl() {
+  // Ưu tiên biến môi trường nếu có
+  if (process.env.EXPO_PUBLIC_API_BASE_URL) {
+    return process.env.EXPO_PUBLIC_API_BASE_URL;
+  }
+  // Lấy IP máy chạy Metro bundler
+  const manifest = Constants.manifest || (Constants as any).expoConfig;
+  let debuggerHost = manifest?.debuggerHost;
+  if (!debuggerHost && manifest?.hostUri) {
+    debuggerHost = manifest.hostUri;
+  }
+  const ip = debuggerHost ? debuggerHost.split(":")[0] : "localhost";
+  return `http://${ip}:8081/api`;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -72,7 +88,15 @@ class ApiClient {
         throw new Error("Token refresh failed");
       }
 
-      const data = await response.json();
+      let data: any = undefined;
+      try {
+        // Nếu response body rỗng, response.text() sẽ trả về chuỗi rỗng
+        const text = await response.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (jsonErr) {
+        // Nếu không parse được JSON, trả về object rỗng và không log lỗi
+        data = {};
+      }
       const {
         accessToken,
         refreshToken: newRefreshToken,
@@ -180,7 +204,16 @@ class ApiClient {
         message: data.message,
       };
     } catch (error: any) {
-      console.error(`API Error [${endpoint}]:`, error);
+      // Ẩn log lỗi parse JSON rỗng (SyntaxError: JSON Parse error: Unexpected end of input)
+      if (
+        error.name === "SyntaxError" &&
+        error.message &&
+        error.message.includes("JSON Parse error: Unexpected end of input")
+      ) {
+        // Không log lỗi này ra console
+      } else {
+        console.error(`API Error [${endpoint}]:`, error);
+      }
 
       // Better error handling for network issues
       if (
