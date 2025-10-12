@@ -41,6 +41,8 @@ export interface RegisterRequest {
   password: string;
   dateOfBirth?: string;
   phone?: string;
+  address?: string;
+  roleNames?: string[];
 }
 
 export interface RegisterResponse {
@@ -116,12 +118,12 @@ class AuthApiService {
     return apiClient.patch<User>("/users/profile", data);
   }
 
-  // // Đổi mật khẩu
-  // async changePassword(
-  //   data: ChangePasswordRequest
-  // ): Promise<ApiResponse<{ message: string }>> {
-  //   return apiClient.put<{ message: string }>("/auth/change-password", data);
-  // }
+  // Đổi mật khẩu
+  async changePassword(
+    data: ChangePasswordRequest
+  ): Promise<ApiResponse<{ message: string }>> {
+    return apiClient.put<{ message: string }>("/auth/change-password", data);
+  }
 
   // // Quên mật khẩu
   // async forgotPassword(

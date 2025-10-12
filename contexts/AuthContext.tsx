@@ -19,7 +19,8 @@ type AuthContextType = {
     email: string,
     password: string,
     dateOfBirth?: string,
-    phone?: string
+    phone?: string,
+    address?: string
   ) => Promise<void>;
   signOut: () => Promise<void>;
   refreshTokenFn: () => Promise<void>;
@@ -116,7 +117,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!response.success || !response.data) {
         // Improve error message for login failures
         let errorMsg = response.error || "Login failed";
-        if (errorMsg.includes("401") || errorMsg.includes("Invalid credentials")) {
+        if (
+          errorMsg.includes("401") ||
+          errorMsg.includes("Invalid credentials")
+        ) {
           errorMsg = "Email hoặc mật khẩu không đúng";
         } else if (errorMsg.includes("Network")) {
           errorMsg = "Lỗi kết nối mạng. Vui lòng kiểm tra internet";
@@ -160,12 +164,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     email: string,
     password: string,
     dateOfBirth?: string,
-    phone?: string
+    phone?: string,
+    address?: string
   ) => {
     setIsLoading(true);
     setHasError(false);
     setErrorMessage(undefined);
     try {
+      // Bước 1: Đăng ký tài khoản
       const response = await authApi.register({
         firstName,
         lastName,
@@ -173,23 +179,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password,
         dateOfBirth,
         phone,
+        address,
+        roleNames: ["ROLE_CUSTOMER"],
       });
 
-      if (!response.success || !response.data) {
+      if (!response.success) {
         throw new Error(response.error || "Registration failed");
       }
 
-      const { user, tokens } = response.data;
-      const expiresAt = Date.now() + tokens.expiresIn * 1000;
+      console.log("✅ Registration successful, now logging in...");
 
-      setUser(user);
-      setAccessToken(tokens.accessToken);
-      setRefreshToken(tokens.refreshToken);
-      setExpiresAt(expiresAt);
-
-      await AsyncStorage.setItem("accessToken", tokens.accessToken);
-      await AsyncStorage.setItem("refreshToken", tokens.refreshToken);
-      await AsyncStorage.setItem("expiresAt", expiresAt.toString());
+      // Bước 2: Tự động đăng nhập với email và password vừa đăng ký
+      await signIn(email, password);
     } catch (e: any) {
       setHasError(true);
       setErrorMessage(e?.message || "Sign up failed");
@@ -218,7 +219,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setExpiresAt(null);
     setHasError(false);
     setErrorMessage(undefined);
-    
+
     try {
       await AsyncStorage.multiRemove([
         "accessToken",
