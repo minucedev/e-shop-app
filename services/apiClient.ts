@@ -137,7 +137,7 @@ class ApiClient {
         url,
         method: config.method,
         headers: config.headers,
-        body: config.body ? "Present" : "None",
+        body: config.body,
       });
 
       const response = await fetch(url, config);
@@ -161,7 +161,36 @@ class ApiClient {
         }
       }
 
-      const data = await response.json();
+      // Special handling for DELETE requests - might have empty response body
+      if (config.method === "DELETE" && response.ok) {
+        const contentType = response.headers.get("content-type");
+        // If no content-type or content-length is 0, return success without parsing
+        const contentLength = response.headers.get("content-length");
+        if (!contentType || contentLength === "0") {
+          return {
+            success: true,
+            data: undefined as T,
+          };
+        }
+      }
+
+      // Try to parse JSON, handle empty responses gracefully
+      let data: any;
+      try {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (jsonErr) {
+        // If DELETE and parse fails, it's probably empty - treat as success
+        if (config.method === "DELETE" && response.ok) {
+          return {
+            success: true,
+            data: undefined as T,
+          };
+        }
+        // For other methods, empty response is unexpected
+        console.warn("Failed to parse response as JSON:", jsonErr);
+        data = {};
+      }
 
       // Handle 401 Unauthorized - try to refresh token once
       if (response.status === 401 && !isRetry && !endpoint.includes("/auth/")) {

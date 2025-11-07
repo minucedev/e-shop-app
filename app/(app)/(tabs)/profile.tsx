@@ -46,7 +46,7 @@ const Profile = () => {
     avatar: "https://i.pravatar.cc/150?img=68", // Tạm thời dùng avatar mặc định
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
-    address: user?.address || "No address",
+    // Địa chỉ sẽ được xử lý sau, tạm thời ẩn
     dateOfBirth: user?.dateOfBirth || "No date of birth",
   };
 
