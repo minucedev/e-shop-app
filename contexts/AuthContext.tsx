@@ -19,8 +19,7 @@ type AuthContextType = {
     email: string,
     password: string,
     dateOfBirth?: string,
-    phone?: string,
-    address?: string
+    phone?: string
   ) => Promise<void>;
   signOut: () => Promise<void>;
   refreshTokenFn: () => Promise<void>;
@@ -116,7 +115,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!response.success || !response.data) {
         // Luôn hiển thị thông báo chung cho user
-        throw new Error("We couldn't find an account with that email and password. Please try again.");
+        throw new Error(
+          "We couldn't find an account with that email and password. Please try again."
+        );
       }
 
       const { accessToken, refreshToken, expiresIn } = response.data;
@@ -155,8 +156,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     email: string,
     password: string,
     dateOfBirth?: string,
-    phone?: string,
-    address?: string
+    phone?: string
   ) => {
     setIsLoading(true);
     setHasError(false);
@@ -170,7 +170,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password,
         dateOfBirth,
         phone,
-        address,
         roleNames: ["ROLE_CUSTOMER"],
       });
 
@@ -276,16 +275,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const updateUser = async (updated: UpdateProfileRequest) => {
     if (!user) return;
 
+    console.log("🔄 Updating user profile:", {
+      userId: user.id,
+      data: updated,
+    });
+
     try {
-      const response = await authApi.updateProfile(updated);
+      const response = await authApi.updateProfile(user.id, updated);
 
       if (!response.success || !response.data) {
         throw new Error(response.error || "Update profile failed");
       }
 
+      console.log("✅ Update user success:", response.data);
       setUser(response.data);
     } catch (e: any) {
-      console.error("Update user error:", e);
+      console.error("❌ Update user error:", e);
       setHasError(true);
       setErrorMessage(e?.message || "Update profile failed");
       throw e;

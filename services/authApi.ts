@@ -1,13 +1,24 @@
 // services/authApi.ts
 import { apiClient, ApiResponse } from "./apiClient";
 
+export interface Address {
+  id: number;
+  streetAddress: string;
+  ward: string;
+  district: string;
+  city: string;
+  postalCode: string;
+  isDefault: boolean;
+  addressType: "HOME" | "WORK" | "OTHER";
+}
+
 export interface User {
   id: number;
   email: string;
   firstName: string;
   lastName: string;
   phone: string | null;
-  address: string | null;
+  addresses: Address[];
   dateOfBirth: string | null;
   roles: string[];
   isActive: boolean;
@@ -41,7 +52,6 @@ export interface RegisterRequest {
   password: string;
   dateOfBirth?: string;
   phone?: string;
-  address?: string;
   roleNames?: string[];
 }
 
@@ -66,7 +76,6 @@ export interface UpdateProfileRequest {
   lastName?: string;
   dateOfBirth?: string;
   phone?: string;
-  address?: string;
 }
 
 export interface ChangePasswordRequest {
@@ -114,8 +123,11 @@ class AuthApiService {
   }
 
   // Cập nhật profile
-  async updateProfile(data: UpdateProfileRequest): Promise<ApiResponse<User>> {
-    return apiClient.patch<User>("/users/profile", data);
+  async updateProfile(
+    userId: number,
+    data: UpdateProfileRequest
+  ): Promise<ApiResponse<User>> {
+    return apiClient.patch<User>(`/users/${userId}`, data);
   }
 
   // Đổi mật khẩu
@@ -151,6 +163,39 @@ class AuthApiService {
       "/auth/upload-avatar",
       formData
     );
+  }
+
+  // Lấy danh sách địa chỉ của user
+  async getUserAddresses(userId: number): Promise<ApiResponse<Address[]>> {
+    return apiClient.get<Address[]>(`/users/${userId}/addresses`);
+  }
+
+  // Tạo địa chỉ mới
+  async createAddress(
+    userId: number,
+    addressData: Omit<Address, "id">
+  ): Promise<ApiResponse<Address>> {
+    return apiClient.post<Address>(`/users/${userId}/addresses`, addressData);
+  }
+
+  // Cập nhật địa chỉ
+  async updateAddress(
+    userId: number,
+    addressId: number,
+    addressData: Omit<Address, "id">
+  ): Promise<ApiResponse<Address>> {
+    return apiClient.patch<Address>(
+      `/users/${userId}/addresses/${addressId}`,
+      addressData
+    );
+  }
+
+  // Xóa địa chỉ
+  async deleteAddress(
+    userId: number,
+    addressId: number
+  ): Promise<ApiResponse<void>> {
+    return apiClient.delete<void>(`/users/${userId}/addresses/${addressId}`);
   }
 
   // // Verify email (nếu cần)

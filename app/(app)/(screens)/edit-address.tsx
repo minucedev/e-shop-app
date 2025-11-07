@@ -1,649 +1,579 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
   Modal,
   TextInput,
-  Alert,
-  FlatList,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { authApi, Address } from "@/services/authApi";
 
-// Types for address suggestions
-interface AddressSuggestion {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-}
-
-// Dummy data for demo
-const initialAddresses = [
-  {
-    id: "1",
-    name: "Nguyen Van A",
-    phone: "0912345678",
-    address: "123 Đường ABC, Quận 1, TP.HCM",
-    label: "Home",
-    isDefault: true,
-  },
-  {
-    id: "2",
-    name: "Tran Thi B",
-    phone: "0987654321",
-    address: "456 Đường XYZ, Quận 3, TP.HCM",
-    label: "Work",
-    isDefault: false,
-  },
-];
-
-const LABELS = ["Home", "Work", "Other"];
-
-// Debounce function
-const useDebounce = (callback: Function, delay: number) => {
-  const [debounceTimer, setDebounceTimer] = useState<any>(null);
-
-  const debouncedCallback = useCallback(
-    (...args: any[]) => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
-      const newTimer = setTimeout(() => callback(...args), delay);
-      setDebounceTimer(newTimer);
-    },
-    [callback, delay, debounceTimer]
-  );
-
-  return debouncedCallback;
-};
-
-// Address search API function with better error handling
-const searchAddresses = async (query: string): Promise<AddressSuggestion[]> => {
-  if (query.length < 3) return [];
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query + ", Vietnam")}`,
-      {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "EShopApp/1.0",
-        },
-        signal: controller.signal,
-      }
-    );
-
-    clearTimeout(timeoutId);
-
-    // Check if response is OK
-    if (!response.ok) {
-      console.error(`API Error: ${response.status} - ${response.statusText}`);
-      return [];
-    }
-
-    // Check content type
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      console.error("API returned non-JSON response:", contentType);
-      return [];
-    }
-
-    const data = await response.json();
-
-    // Validate response structure
-    if (!Array.isArray(data)) {
-      console.error("API response is not an array:", data);
-      return [];
-    }
-
-    return data
-      .map((item: any) => ({
-        place_id: item.place_id || Date.now() + Math.random(),
-        display_name: item.display_name || "Unknown location",
-        lat: item.lat || "0",
-        lon: item.lon || "0",
-      }))
-      .filter((item) => item.display_name !== "Unknown location");
-  } catch (error: any) {
-    if (error.name === "AbortError") {
-      console.error("Address search timeout");
-    } else {
-      console.error("Address search error:", error.message || error);
-    }
-    return [];
-  }
-};
+const ADDRESS_TYPES = ["HOME", "WORK", "OTHER"] as const;
 
 const EditAddress = () => {
   const router = useRouter();
-  const [addresses, setAddresses] = useState(initialAddresses);
+  const { user } = useAuth();
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<"add" | "edit">("add");
-  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [modalMode, setModalMode] = useState<"add" | "edit">("add");
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   // Form state
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    label: LABELS[0],
+  const [formData, setFormData] = useState({
+    streetAddress: "",
+    ward: "",
+    district: "",
+    city: "",
+    postalCode: "70000",
+    isDefault: false,
+    addressType: "HOME" as "HOME" | "WORK" | "OTHER",
   });
-  const [formError, setFormError] = useState("");
 
-  // Address autocomplete states
-  const [addressSuggestions, setAddressSuggestions] = useState<
-    AddressSuggestion[]
-  >([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState("");
+  // Fetch addresses from API
+  const fetchAddresses = async () => {
+    if (!user) return;
 
-  // Debounced search for addresses with fallback
-  const debouncedSearch = useDebounce(async (query: string) => {
-    if (query.length < 3) {
-      setAddressSuggestions([]);
-      setShowSuggestions(false);
-      setIsSearching(false);
-      setSearchError("");
-      return;
-    }
-
-    setIsSearching(true);
-    setSearchError("");
-
-    const suggestions = await searchAddresses(query);
-
-    if (suggestions.length === 0 && query.length >= 3) {
-      // Fallback: Create local suggestions for common Vietnam locations
-      const fallbackSuggestions = getFallbackSuggestions(query);
-      setAddressSuggestions(fallbackSuggestions);
-      setShowSuggestions(fallbackSuggestions.length > 0);
-
-      if (fallbackSuggestions.length === 0) {
-        setSearchError("No addresses found. Please enter manually.");
+    try {
+      const response = await authApi.getUserAddresses(user.id);
+      if (response.success && response.data) {
+        setAddresses(response.data);
       }
-    } else {
-      setAddressSuggestions(suggestions);
-      setShowSuggestions(suggestions.length > 0);
+    } catch (error: any) {
+      console.error("Error fetching addresses:", error);
+      Alert.alert("Error", "Failed to load addresses");
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
     }
-
-    setIsSearching(false);
-  }, 500);
-
-  // Fallback suggestions for common Vietnam locations
-  const getFallbackSuggestions = (query: string): AddressSuggestion[] => {
-    const commonAreas = [
-      "Quận 1, TP.HCM",
-      "Quận 3, TP.HCM",
-      "Quận 7, TP.HCM",
-      "Quận Bình Thạnh, TP.HCM",
-      "Quận Tân Bình, TP.HCM",
-      "Ba Đình, Hà Nội",
-      "Hoàn Kiếm, Hà Nội",
-      "Cầu Giấy, Hà Nội",
-      "Thanh Xuân, Hà Nội",
-      "Hai Bà Trưng, Hà Nội",
-    ];
-
-    return commonAreas
-      .filter(
-        (area) =>
-          area.toLowerCase().includes(query.toLowerCase()) ||
-          query.toLowerCase().includes(area.split(",")[0].toLowerCase())
-      )
-      .slice(0, 3)
-      .map((area, index) => ({
-        place_id: Date.now() + index,
-        display_name: `${query}, ${area}, Vietnam`,
-        lat: "10.8231",
-        lon: "106.6297",
-      }));
   };
 
-  // Handle address input change
-  const handleAddressChange = (text: string) => {
-    setForm({ ...form, address: text });
-    debouncedSearch(text);
+  useEffect(() => {
+    fetchAddresses();
+  }, [user]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchAddresses();
   };
 
-  // Handle suggestion selection
-  const handleSuggestionSelect = (suggestion: AddressSuggestion) => {
-    setForm({ ...form, address: suggestion.display_name });
-    setShowSuggestions(false);
-    setAddressSuggestions([]);
-    setSearchError("");
+  const resetForm = () => {
+    setFormData({
+      streetAddress: "",
+      ward: "",
+      district: "",
+      city: "",
+      postalCode: "70000",
+      isDefault: false,
+      addressType: "HOME",
+    });
+    setEditingAddress(null);
+    setModalMode("add");
   };
 
-  // Modal open for add/edit
-  const openModal = (type: "add" | "edit", address?: any) => {
-    setModalType(type);
-    setFormError("");
-    setShowSuggestions(false);
-    setAddressSuggestions([]);
-    if (type === "edit" && address) {
-      setForm({
-        name: address.name,
-        phone: address.phone,
-        address: address.address,
-        label: address.label,
-      });
-      setSelectedAddress(address);
-    } else {
-      setForm({
-        name: "",
-        phone: "",
-        address: "",
-        label: LABELS[0],
-      });
-      setSelectedAddress(null);
-    }
+  const openEditModal = (address: Address) => {
+    setFormData({
+      streetAddress: address.streetAddress,
+      ward: address.ward,
+      district: address.district,
+      city: address.city,
+      postalCode: address.postalCode,
+      isDefault: address.isDefault,
+      addressType: address.addressType,
+    });
+    setEditingAddress(address);
+    setModalMode("edit");
     setShowModal(true);
   };
 
-  // Validate form
-  const validateForm = () => {
-    if (!form.name.trim() || form.name.trim().length < 2)
-      return "Name must be at least 2 characters.";
-    if (!/^\d{10,11}$/.test(form.phone)) return "Phone must be 10-11 digits.";
-    if (!form.address.trim()) return "Address is required.";
-    if (!LABELS.includes(form.label)) return "Please select a label.";
-    return "";
-  };
+  const handleSaveAddress = async () => {
+    if (!user) return;
 
-  // Save address (add or edit)
-  const handleSave = () => {
-    const error = validateForm();
-    if (error) {
-      setFormError(error);
+    // Validate form
+    if (
+      !formData.streetAddress.trim() ||
+      !formData.ward.trim() ||
+      !formData.district.trim() ||
+      !formData.city.trim()
+    ) {
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
-    if (modalType === "add") {
-      setAddresses([
-        {
-          ...form,
-          id: Date.now().toString(),
-          isDefault: addresses.length === 0,
-        },
-        ...addresses,
-      ]);
-    } else if (modalType === "edit" && selectedAddress) {
-      setAddresses(
-        addresses.map((addr) =>
-          addr.id === selectedAddress.id ? { ...addr, ...form } : addr
-        )
-      );
-    }
-    setShowSuggestions(false);
-    setAddressSuggestions([]);
-    setShowModal(false);
-  };
 
-  // Set default address
-  const handleSetDefault = (id: string) => {
-    if (addresses.find((addr) => addr.id === id)?.isDefault) return;
-    Alert.alert("Confirm", "Set this address as default?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Yes",
-        onPress: () => {
-          setAddresses(
-            addresses.map((addr) => ({
-              ...addr,
-              isDefault: addr.id === id,
-            }))
+    setIsSaving(true);
+    try {
+      if (modalMode === "add") {
+        // Check address limit for add mode
+        if (addresses.length >= 3) {
+          Alert.alert(
+            "Address Limit Reached",
+            "You can only have a maximum of 3 addresses. Please delete an existing address before adding a new one.",
+            [{ text: "OK" }]
           );
-        },
-      },
-    ]);
+          setIsSaving(false);
+          return;
+        }
+
+        const response = await authApi.createAddress(user.id, formData);
+        if (response.success && response.data) {
+          setAddresses([response.data, ...addresses]);
+          setShowModal(false);
+          resetForm();
+          Alert.alert("Success", "Address added successfully");
+        } else {
+          Alert.alert("Error", response.error || "Failed to add address");
+        }
+      } else {
+        // Edit mode
+        if (!editingAddress) return;
+
+        const response = await authApi.updateAddress(
+          user.id,
+          editingAddress.id,
+          formData
+        );
+        if (response.success && response.data) {
+          // Update the address in the list
+          setAddresses(
+            addresses.map((addr) =>
+              addr.id === editingAddress.id ? response.data! : addr
+            )
+          );
+          setShowModal(false);
+          resetForm();
+          Alert.alert("Success", "Address updated successfully");
+        } else {
+          Alert.alert("Error", response.error || "Failed to update address");
+        }
+      }
+    } catch (error: any) {
+      console.error("Error saving address:", error);
+      Alert.alert("Error", "Failed to save address");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Delete address
-  const handleDelete = (id: string) => {
-    if (addresses.length === 1) return;
-    Alert.alert("Confirm", "Are you sure you want to delete this address?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          setAddresses(addresses.filter((addr) => addr.id !== id));
+  const handleDeleteAddress = async (address: Address) => {
+    if (!user) return;
+
+    // Không cho xóa nếu chỉ còn 1 địa chỉ
+    if (addresses.length <= 1) {
+      Alert.alert(
+        "Cannot Delete",
+        "You must have at least one address. Add another address before deleting this one.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    // Confirm deletion
+    Alert.alert(
+      "Delete Address",
+      "Are you sure you want to delete this address?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const response = await authApi.deleteAddress(user.id, address.id);
+              if (response.success) {
+                // Remove from list
+                setAddresses(
+                  addresses.filter((addr) => addr.id !== address.id)
+                );
+                Alert.alert("Success", "Address deleted successfully");
+              } else {
+                Alert.alert(
+                  "Error",
+                  response.error || "Failed to delete address"
+                );
+              }
+            } catch (error: any) {
+              console.error("Error deleting address:", error);
+              Alert.alert("Error", "Failed to delete address");
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
+
+  const getAddressTypeIcon = (type: string) => {
+    switch (type) {
+      case "HOME":
+        return "home-outline";
+      case "WORK":
+        return "briefcase-outline";
+      default:
+        return "location-outline";
+    }
+  };
+
+  const getAddressTypeLabel = (type: string) => {
+    switch (type) {
+      case "HOME":
+        return "Home";
+      case "WORK":
+        return "Work";
+      default:
+        return "Other";
+    }
+  };
+
+  const formatAddress = (address: Address) => {
+    return `${address.streetAddress}, ${address.ward}, ${address.district}, ${address.city} ${address.postalCode}`;
+  };
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-gray-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text className="mt-4 text-gray-600">Loading addresses...</Text>
+      </View>
+    );
+  }
 
   return (
-    <>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
-          <TouchableOpacity onPress={() => router.back()} className="p-2">
-            <Ionicons name="arrow-back" size={24} color="#374151" />
+    <View className="flex-1 bg-gray-50">
+      {/* Header */}
+      <View className="bg-white pt-12 pb-4 px-5 shadow-sm">
+        <View className="flex-row items-center justify-between">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-10 h-10 items-center justify-center"
+          >
+            <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text className="text-lg font-semibold text-gray-900">Addresses</Text>
-          <TouchableOpacity className="p-2">
-            {/* <Ionicons name="ellipsis-vertical" size={24} color="#374151" /> */}
-          </TouchableOpacity>
+          <Text className="text-lg font-bold text-black">
+            Shipping Addresses
+          </Text>
+          <View className="w-10" />
         </View>
+      </View>
 
-        <View className="flex-1 bg-gray-50 px-4 pt-4">
-          {/* Add New Address Button */}
-          <View className="mb-4">
-            <TouchableOpacity
-              className="flex-row items-center bg-white border border-blue-500 rounded-lg py-3 px-4"
-              onPress={() => openModal("add")}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add" size={20} color="#3b82f6" />
-              <Text className="text-blue-500 text-base font-medium ml-3">
-                Add New Address
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View className="p-5">
+          {addresses.length === 0 ? (
+            <View className="items-center justify-center py-20">
+              <Ionicons name="location-outline" size={64} color="#D1D5DB" />
+              <Text className="text-gray-500 mt-4 text-center">
+                No addresses yet
               </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Address List */}
-          <View className="w-full">
-            {addresses.length === 0 ? (
-              <View className="bg-white rounded-xl p-8 items-center shadow-sm">
-                <Ionicons name="location-outline" size={48} color="#9ca3af" />
-                <Text className="text-gray-500 text-center mt-4 text-base">
-                  No addresses found
-                </Text>
-                <Text className="text-gray-400 text-center mt-2 text-sm">
-                  Add your first address to get started
-                </Text>
-              </View>
-            ) : (
-              addresses
-                .sort((a, b) => (a.isDefault ? -1 : 1))
-                .map((addr) => {
-                  const getIconForLabel = (label: string) => {
-                    switch (label.toLowerCase()) {
-                      case "home":
-                        return "home";
-                      case "work":
-                        return "business";
-                      case "office":
-                        return "business";
-                      default:
-                        return "location";
-                    }
-                  };
-
-                  return (
-                    <View
-                      key={addr.id}
-                      className="bg-white rounded-lg p-4 mb-3 shadow-sm border border-gray-100"
-                    >
-                      {/* Header with icon, label and checkbox */}
-                      <View className="flex-row items-center justify-between mb-3">
-                        <View className="flex-row items-center">
-                          <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
-                            <Ionicons
-                              name={getIconForLabel(addr.label)}
-                              size={16}
-                              color="#3b82f6"
-                            />
-                          </View>
-                          <Text
-                            className={`text-base font-semibold ${
-                              addr.isDefault ? "text-blue-600" : "text-gray-900"
-                            }`}
-                          >
-                            {addr.label}
-                          </Text>
-                        </View>
-
-                        {/* Checkbox */}
-                        <TouchableOpacity
-                          onPress={() => handleSetDefault(addr.id)}
-                          disabled={addr.isDefault}
-                        >
-                          <View
-                            className={`w-6 h-6 rounded border-2 items-center justify-center ${
-                              addr.isDefault
-                                ? "bg-blue-500 border-blue-500"
-                                : "border-gray-300"
-                            }`}
-                          >
-                            {addr.isDefault && (
-                              <Ionicons
-                                name="checkmark"
-                                size={14}
-                                color="white"
-                              />
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      </View>
-
-                      {/* Address details */}
-                      <View className="mb-3">
-                        <Text className="text-gray-900 text-sm font-medium mb-1">
-                          {addr.address}
-                        </Text>
-                        <Text className="text-gray-600 text-sm">
-                          {addr.phone}
-                        </Text>
-                      </View>
-
-                      {/* Action buttons */}
-                      <View className="flex-row items-center justify-between">
-                        <TouchableOpacity
-                          className="flex-row items-center"
-                          onPress={() => {
-                            // TODO: Implement view on map
-                            Alert.alert(
-                              "View on Map",
-                              "Map feature coming soon!"
-                            );
-                          }}
-                        >
-                          <Text className="text-blue-500 text-sm font-medium">
-                            View on map
-                          </Text>
-                        </TouchableOpacity>
-
-                        <View className="flex-row items-center">
-                          {/* Edit button */}
-                          <TouchableOpacity
-                            className="p-2"
-                            onPress={() => openModal("edit", addr)}
-                          >
-                            <Ionicons
-                              name="pencil-outline"
-                              size={16}
-                              color="#6b7280"
-                            />
-                          </TouchableOpacity>
-
-                          {/* More options */}
-                          <TouchableOpacity
-                            className="p-2 ml-1"
-                            onPress={() => {
-                              if (addresses.length > 1) {
-                                Alert.alert(
-                                  "Address Options",
-                                  "Choose an action",
-                                  [
-                                    { text: "Cancel", style: "cancel" },
-                                    {
-                                      text: "Delete",
-                                      style: "destructive",
-                                      onPress: () => handleDelete(addr.id),
-                                    },
-                                  ]
-                                );
-                              }
-                            }}
-                          >
-                            <Ionicons
-                              name="ellipsis-horizontal"
-                              size={16}
-                              color="#6b7280"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
+              <Text className="text-gray-400 text-sm mt-2 text-center">
+                Add your first shipping address
+              </Text>
+            </View>
+          ) : (
+            addresses.map((address) => (
+              <TouchableOpacity
+                key={address.id}
+                className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100"
+                onPress={() => openEditModal(address)}
+                activeOpacity={0.7}
+              >
+                {/* Header with label and default badge */}
+                <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center">
+                    <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mr-3">
+                      <Ionicons
+                        name={getAddressTypeIcon(address.addressType)}
+                        size={20}
+                        color="#007AFF"
+                      />
                     </View>
-                  );
-                })
-            )}
-          </View>
+                    <Text className="text-base font-semibold text-gray-900">
+                      {getAddressTypeLabel(address.addressType)}
+                    </Text>
+                  </View>
+                  {address.isDefault && (
+                    <View className="bg-green-50 px-3 py-1 rounded-full">
+                      <Text className="text-xs font-medium text-green-600">
+                        Default
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Address details */}
+                <View className="border-t border-gray-100 pt-3">
+                  <Text className="text-gray-900 text-sm leading-5">
+                    {formatAddress(address)}
+                  </Text>
+                </View>
+
+                {/* Tap to edit hint */}
+                <View className="flex-row items-center justify-center mt-3 pt-3 border-t border-gray-100">
+                  <Ionicons name="pencil-outline" size={16} color="#9CA3AF" />
+                  <Text className="text-gray-400 text-xs ml-2">
+                    Tap to edit
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </ScrollView>
 
-      {/* Modal Thêm/Sửa Địa Chỉ */}
+      {/* Add New Address Button */}
+      <View className="bg-white px-5 py-4 shadow-lg">
+        <TouchableOpacity
+          className="bg-blue-500 rounded-full py-4 items-center"
+          onPress={() => {
+            if (addresses.length >= 3) {
+              Alert.alert(
+                "Address Limit Reached",
+                "You can only have a maximum of 3 addresses. Please delete an existing address before adding a new one.",
+                [{ text: "OK" }]
+              );
+            } else {
+              resetForm();
+              setModalMode("add");
+              setShowModal(true);
+            }
+          }}
+        >
+          <View className="flex-row items-center">
+            <Ionicons name="add-circle-outline" size={24} color="white" />
+            <Text className="text-white font-semibold text-base ml-2">
+              Add New Address{" "}
+              {addresses.length > 0 && `(${addresses.length}/3)`}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Add Address Modal */}
       <Modal
         visible={showModal}
-        transparent
         animationType="slide"
-        onRequestClose={() => setShowModal(false)}
+        transparent={true}
+        onRequestClose={() => {
+          setShowModal(false);
+          resetForm();
+        }}
       >
-        <View className="flex-1 bg-black/40 justify-center items-center">
-          <View className="bg-white p-6 rounded-xl w-[92%] max-w-[400px]">
-            <Text className="text-lg font-bold text-center mb-4">
-              {modalType === "add" ? "Add Address" : "Edit Address"}
-            </Text>
-            <TextInput
-              className="border border-gray-200 rounded-lg px-4 py-3 text-base bg-gray-50 text-gray-900 mb-2"
-              placeholder="Name"
-              value={form.name}
-              onChangeText={(text) => setForm({ ...form, name: text })}
-            />
-            <TextInput
-              className="border border-gray-200 rounded-lg px-4 py-3 text-base bg-gray-50 text-gray-900 mb-2"
-              placeholder="Phone"
-              value={form.phone}
-              onChangeText={(text) => setForm({ ...form, phone: text })}
-              keyboardType="phone-pad"
-            />
-            {/* Address Input with Autocomplete */}
-            <View className="mb-2 relative">
-              <View className="flex-row items-center">
-                <TextInput
-                  className="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-base bg-gray-50 text-gray-900"
-                  placeholder="Enter address to search..."
-                  value={form.address}
-                  onChangeText={handleAddressChange}
-                  multiline={false}
-                />
-                {isSearching && (
-                  <ActivityIndicator
-                    size="small"
-                    color="#2563eb"
-                    style={{ position: "absolute", right: 12 }}
-                  />
-                )}
+        <View className="flex-1 justify-end bg-black/50">
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ maxHeight: "90%" }}
+          >
+            <View className="bg-white rounded-t-3xl">
+              {/* Modal Header */}
+              <View className="flex-row items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+                <Text className="text-xl font-bold text-gray-900">
+                  {modalMode === "add" ? "Add New Address" : "Edit Address"}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowModal(false);
+                    resetForm();
+                  }}
+                  className="w-8 h-8 items-center justify-center"
+                >
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
               </View>
 
-              {/* Search Error Message */}
-              {searchError && !isSearching && (
-                <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-1">
-                  <View className="flex-row items-center">
-                    <Ionicons
-                      name="warning-outline"
-                      size={16}
-                      color="#d97706"
-                    />
-                    <Text className="text-sm text-yellow-700 ml-2 flex-1">
-                      {searchError}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Address Suggestions */}
-              {showSuggestions && addressSuggestions.length > 0 && (
-                <View className="border border-gray-200 rounded-lg bg-white mt-1 max-h-48">
-                  <FlatList
-                    data={addressSuggestions}
-                    keyExtractor={(item) => item.place_id.toString()}
-                    nestedScrollEnabled
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        className="p-3 border-b border-gray-100"
-                        onPress={() => handleSuggestionSelect(item)}
-                      >
-                        <View className="flex-row items-start">
-                          <Ionicons
-                            name="location-outline"
-                            size={16}
-                            color="#6b7280"
-                            style={{ marginTop: 2, marginRight: 8 }}
-                          />
-                          <Text
-                            className="text-sm text-gray-700 flex-1"
-                            numberOfLines={2}
-                          >
-                            {item.display_name}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    )}
+              <ScrollView
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={{
+                  paddingHorizontal: 20,
+                  paddingVertical: 20,
+                }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {/* Street Address */}
+                <View className="mb-4">
+                  <Text className="text-sm font-medium text-gray-700 mb-2">
+                    Street Address *
+                  </Text>
+                  <TextInput
+                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900"
+                    placeholder="e.g., 123 Nguyen Van Cu"
+                    value={formData.streetAddress}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, streetAddress: text })
+                    }
                   />
                 </View>
-              )}
-            </View>
-            {/* Label chọn nhãn */}
-            <View className="flex-row mb-2">
-              {LABELS.map((label) => (
+
+                {/* Ward */}
+                <View className="mb-4">
+                  <Text className="text-sm font-medium text-gray-700 mb-2">
+                    Ward *
+                  </Text>
+                  <TextInput
+                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900"
+                    placeholder="e.g., Phường 4"
+                    value={formData.ward}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, ward: text })
+                    }
+                  />
+                </View>
+
+                {/* District */}
+                <View className="mb-4">
+                  <Text className="text-sm font-medium text-gray-700 mb-2">
+                    District *
+                  </Text>
+                  <TextInput
+                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900"
+                    placeholder="e.g., Quận 5"
+                    value={formData.district}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, district: text })
+                    }
+                  />
+                </View>
+
+                {/* City */}
+                <View className="mb-4">
+                  <Text className="text-sm font-medium text-gray-700 mb-2">
+                    City *
+                  </Text>
+                  <TextInput
+                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900"
+                    placeholder="e.g., TP. Hồ Chí Minh"
+                    value={formData.city}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, city: text })
+                    }
+                  />
+                </View>
+
+                {/* Address Type */}
+                <View className="mb-4">
+                  <Text className="text-sm font-medium text-gray-700 mb-2">
+                    Address Type *
+                  </Text>
+                  <View className="flex-row">
+                    {ADDRESS_TYPES.map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        onPress={() =>
+                          setFormData({ ...formData, addressType: type })
+                        }
+                        className={`flex-1 mr-2 py-3 rounded-xl border ${
+                          formData.addressType === type
+                            ? "bg-blue-500 border-blue-500"
+                            : "bg-gray-50 border-gray-200"
+                        }`}
+                      >
+                        <Text
+                          className={`text-center font-medium ${
+                            formData.addressType === type
+                              ? "text-white"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {type}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Set as Default */}
                 <TouchableOpacity
-                  key={label}
-                  className={`px-3 py-1 rounded-full mr-2 border ${
-                    form.label === label
-                      ? "bg-blue-500 border-blue-500"
-                      : "bg-gray-100 border-gray-200"
-                  }`}
-                  onPress={() => setForm({ ...form, label })}
+                  onPress={() =>
+                    setFormData({ ...formData, isDefault: !formData.isDefault })
+                  }
+                  className="flex-row items-center mb-6"
                 >
-                  <Text
-                    className={`text-xs font-semibold ${
-                      form.label === label ? "text-white" : "text-gray-700"
+                  <View
+                    className={`w-6 h-6 rounded border-2 items-center justify-center mr-3 ${
+                      formData.isDefault
+                        ? "bg-blue-500 border-blue-500"
+                        : "border-gray-300"
                     }`}
                   >
-                    {label}
+                    {formData.isDefault && (
+                      <Ionicons name="checkmark" size={16} color="white" />
+                    )}
+                  </View>
+                  <Text className="text-base text-gray-700">
+                    Set as default address
                   </Text>
                 </TouchableOpacity>
-              ))}
+              </ScrollView>
+
+              {/* Action Buttons */}
+              <View className="px-5 py-4 border-t border-gray-100">
+                {modalMode === "edit" && editingAddress && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowModal(false);
+                      handleDeleteAddress(editingAddress);
+                    }}
+                    className="bg-red-50 rounded-xl py-3 items-center mb-3 border border-red-200"
+                    disabled={isSaving}
+                  >
+                    <View className="flex-row items-center">
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#DC2626"
+                      />
+                      <Text className="text-red-600 font-semibold text-base ml-2">
+                        Delete Address
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                <View className="flex-row">
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowModal(false);
+                      resetForm();
+                    }}
+                    className="flex-1 bg-gray-100 rounded-xl py-4 items-center mr-2"
+                    disabled={isSaving}
+                  >
+                    <Text className="text-gray-700 font-semibold text-base">
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleSaveAddress}
+                    className="flex-1 bg-blue-500 rounded-xl py-4 items-center ml-2"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <ActivityIndicator color="white" />
+                    ) : (
+                      <Text className="text-white font-semibold text-base">
+                        {modalMode === "add" ? "Add Address" : "Save Changes"}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-            {formError ? (
-              <Text className="text-red-500 text-sm mb-2">{formError}</Text>
-            ) : null}
-            <View className="flex-row justify-between mt-2 space-x-4">
-              <TouchableOpacity
-                className="flex-1 py-3 rounded-lg bg-gray-100 items-center"
-                onPress={() => {
-                  setShowSuggestions(false);
-                  setAddressSuggestions([]);
-                  setShowModal(false);
-                }}
-              >
-                <Text className="text-gray-600 font-medium text-base">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="flex-1 py-3 rounded-lg bg-blue-500 items-center"
-                onPress={handleSave}
-              >
-                <Text className="text-white font-bold text-base">
-                  {modalType === "add" ? "Add" : "Save"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
-    </>
+    </View>
   );
 };
 

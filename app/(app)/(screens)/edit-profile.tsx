@@ -23,9 +23,8 @@ const EditProfile = () => {
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [phone, setPhone] = useState(user?.phone || "");
-  const [address, setAddress] = useState(user?.address || "");
-  const [dateOfBirth, setDateOfBirth] = useState(
-    user?.dateOfBirth ? new Date(user.dateOfBirth) : new Date()
+  const [dateOfBirth, setDateOfBirth] = useState<Date | null>(
+    user?.dateOfBirth ? new Date(user.dateOfBirth) : null
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,15 +51,8 @@ const EditProfile = () => {
   };
 
   const formatDateForAPI = (date: Date): string => {
-    // Set time to noon to avoid timezone issues, then format for Java LocalDateTime
-    const dateAtNoon = new Date(date);
-    dateAtNoon.setHours(12, 0, 0, 0);
-
-    const year = dateAtNoon.getFullYear();
-    const month = String(dateAtNoon.getMonth() + 1).padStart(2, "0");
-    const day = String(dateAtNoon.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}T12:00:00`;
+    // Return ISO 8601 format with timezone (e.g., "2025-11-07T09:11:55.227Z")
+    return date.toISOString();
   };
 
   const handleSave = async () => {
@@ -77,13 +69,18 @@ const EditProfile = () => {
     setIsLoading(true);
     try {
       if (updateUser) {
-        await updateUser({
+        const updateData: any = {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phone: phone.trim() || undefined,
-          address: address.trim() || undefined,
-          dateOfBirth: formatDateForAPI(dateOfBirth),
-        });
+        };
+
+        // Chỉ gửi dateOfBirth nếu user đã có giá trị
+        if (dateOfBirth) {
+          updateData.dateOfBirth = formatDateForAPI(dateOfBirth);
+        }
+
+        await updateUser(updateData);
       }
       Alert.alert("Success", "Profile updated successfully!", [
         { text: "OK", onPress: () => router.back() },
@@ -193,21 +190,6 @@ const EditProfile = () => {
           </Text>
         </View>
 
-        {/* Address */}
-        <View className="bg-white rounded-lg p-4">
-          <Text className="text-sm font-medium text-gray-700 mb-2">
-            Address
-          </Text>
-          <TextInput
-            value={address}
-            onChangeText={setAddress}
-            placeholder="Enter address"
-            multiline={true}
-            numberOfLines={3}
-            className="text-base text-gray-900 border-b border-gray-200 py-2"
-          />
-        </View>
-
         {/* Date of Birth */}
         <View className="bg-white rounded-lg p-4">
           <Text className="text-sm font-medium text-gray-700 mb-2">
@@ -219,7 +201,7 @@ const EditProfile = () => {
           >
             <View className="flex-row items-center justify-between">
               <Text className="text-base text-gray-900">
-                {formatDateForDisplay(dateOfBirth)}
+                {dateOfBirth ? formatDateForDisplay(dateOfBirth) : "Not set"}
               </Text>
               <Ionicons name="calendar-outline" size={20} color="#6b7280" />
             </View>
@@ -228,7 +210,7 @@ const EditProfile = () => {
 
           {showDatePicker && (
             <DateTimePicker
-              value={dateOfBirth}
+              value={dateOfBirth || new Date()}
               mode="date"
               display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={handleDateChange}

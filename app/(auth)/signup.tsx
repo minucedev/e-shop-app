@@ -20,7 +20,6 @@ import { useAuth } from "@/contexts/AuthContext"; // ← ADDED
 interface SignupErrors {
   firstName: string;
   lastName: string;
-  address: string;
   dateOfBirth: string;
   email: string;
   password: string;
@@ -44,7 +43,6 @@ const Signup = () => {
   // ← Thêm các state mới
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [address, setAddress] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -56,7 +54,6 @@ const Signup = () => {
   const [errors, setErrors] = useState<SignupErrors>({
     firstName: "",
     lastName: "",
-    address: "",
     dateOfBirth: "",
     email: "",
     password: "",
@@ -113,15 +110,6 @@ const Signup = () => {
       isValid = false;
     } else if (lastName.trim().length < 2) {
       newErrors.lastName = "Last name must be at least 2 characters";
-      isValid = false;
-    }
-
-    // Validate address
-    if (!address.trim()) {
-      newErrors.address = "Address is required";
-      isValid = false;
-    } else if (address.trim().length < 5) {
-      newErrors.address = "Address must be at least 5 characters";
       isValid = false;
     }
 
@@ -200,15 +188,13 @@ const Signup = () => {
         email.trim(),
         password,
         dateOfBirth.toISOString(),
-        phone.trim(),
-        address.trim()
+        phone.trim()
       );
 
       console.log("Signup successful");
       console.log("Submitted payload:", {
         firstName,
         lastName,
-        address,
         dateOfBirth: dateOfBirth.toISOString(),
         email,
         phone,
@@ -373,31 +359,6 @@ const Signup = () => {
               minimumDate={new Date(1900, 0, 1)}
             />
           )}
-
-          {/* Address Input */}
-          <View style={styles.inputContainer}>
-            <Ionicons
-              name="location-outline"
-              size={20}
-              color={colors.secondary}
-            />
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter your address"
-              placeholderTextColor={colors.secondary}
-              value={address}
-              onChangeText={(text) => {
-                setAddress(text);
-                if (errors.address) {
-                  setErrors({ ...errors, address: "" });
-                }
-              }}
-              autoCapitalize="words"
-            />
-          </View>
-          {errors.address ? (
-            <Text style={styles.errorText}>{errors.address}</Text>
-          ) : null}
 
           {/* Email Input */}
           <View style={styles.inputContainer}>
