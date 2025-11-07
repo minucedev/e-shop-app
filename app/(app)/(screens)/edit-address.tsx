@@ -322,7 +322,6 @@ const EditAddress = () => {
 
                 {/* Tap to edit hint */}
                 <View className="flex-row items-center justify-center mt-3 pt-3 border-t border-gray-100">
-                  <Ionicons name="pencil-outline" size={16} color="#9CA3AF" />
                   <Text className="text-gray-400 text-xs ml-2">
                     Tap to edit
                   </Text>

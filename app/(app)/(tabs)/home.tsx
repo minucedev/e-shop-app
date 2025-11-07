@@ -12,7 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProduct } from "@/contexts/ProductContext";
-import { usePromotion, IPromotion } from "@/contexts/PromotionContext";
+import { getActiveCampaigns, ICampaign } from "@/services/campaignApi";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
@@ -23,10 +23,11 @@ const Home = () => {
   const { products, isLoading } = useProduct();
   const { formatPrice } = useProduct();
 
-  // Get promotions from PromotionContext
-  const { getPromotions } = usePromotion();
-  const [promotions, setPromotions] = React.useState<IPromotion[]>([]);
-  const [loadingPromos, setLoadingPromos] = React.useState(true);
+  // Campaign banners state
+  const [campaigns, setCampaigns] = React.useState<ICampaign[]>([]);
+  const [loadingCampaigns, setLoadingCampaigns] = React.useState(true);
+  const [selectedCampaign, setSelectedCampaign] =
+    React.useState<ICampaign | null>(null);
 
   // Get favorites from FavoritesContext
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -35,10 +36,12 @@ const Home = () => {
   const { addToCart } = useCart();
 
   React.useEffect(() => {
-    getPromotions().then((data) => {
-      setPromotions(data);
-      setLoadingPromos(false);
-    });
+    getActiveCampaigns()
+      .then((data) => {
+        setCampaigns(data);
+      })
+      .catch(() => setCampaigns([]))
+      .finally(() => setLoadingCampaigns(false));
   }, []);
 
   const renderProductItem = ({ item }: { item: (typeof products)[0] }) => {
@@ -162,16 +165,16 @@ const Home = () => {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Promotion Banner Section */}
+        {/* Campaign Banner Section */}
         <View className="mx-4 mt-2">
           <Text className="text-lg font-bold text-gray-900 mb-2">
             Promotion Events
           </Text>
-          {loadingPromos ? (
+          {loadingCampaigns ? (
             <Text className="text-gray-500">Loading...</Text>
           ) : (
             <FlatList
-              data={promotions}
+              data={campaigns}
               horizontal
               keyExtractor={(item) => item.id.toString()}
               showsHorizontalScrollIndicator={false}
@@ -179,51 +182,136 @@ const Home = () => {
                 <TouchableOpacity
                   className="mr-3 w-52"
                   activeOpacity={0.85}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(app)/(screens)/promotion-detail",
-                      params: { id: item.id },
-                    })
-                  }
+                  onPress={() => setSelectedCampaign(item)}
                 >
                   <View className="bg-blue-100 rounded-xl p-4 relative overflow-hidden shadow-md">
-                    {/* Diagonal stripe background pattern */}
-                    <View className="absolute inset-0 opacity-20">
-                      <View className="absolute w-full h-3 bg-blue-300 top-2 -left-6 right-6 transform -rotate-12"></View>
-                      <View className="absolute w-full h-3 bg-blue-300 top-8 -left-6 right-6 transform -rotate-12"></View>
-                      <View className="absolute w-full h-3 bg-blue-300 top-14 -left-6 right-6 transform -rotate-12"></View>
-                      <View className="absolute w-full h-3 bg-blue-300 top-20 -left-6 right-6 transform -rotate-12"></View>
-                    </View>
-
-                    {/* Content */}
-                    <View className="z-10">
-                      <View className="mb-2">
-                        <Text className="text-2xl font-extrabold text-blue-800 mb-1">
-                          {item.discountType === "PERCENTAGE"
-                            ? `${item.discountValue}% OFF`
-                            : `${Math.round(item.discountValue / 1000)}K OFF`}
-                        </Text>
-                        <Text
-                          className="text-sm font-medium text-blue-700"
-                          numberOfLines={2}
-                        >
-                          {item.name
-                            .replace(/^\d+% Off /, "")
-                            .replace(/^\d+K Off /, "")}
-                        </Text>
-                      </View>
-
-                      <View className="bg-blue-800 rounded-full px-4 py-2 self-start">
-                        <Text className="text-sm font-bold text-white">
-                          SHOP NOW
-                        </Text>
-                      </View>
-                    </View>
+                    {/* Banner Image */}
+                    <Image
+                      source={{ uri: item.image }}
+                      className="w-full h-32 rounded-xl mb-2"
+                      resizeMode="cover"
+                    />
                   </View>
                 </TouchableOpacity>
               )}
               contentContainerStyle={{ paddingRight: 16 }}
             />
+          )}
+          {/* Campaign Popup Modal */}
+          {selectedCampaign && (
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0,0,0,0.6)",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 99,
+              }}
+            >
+              <View className="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-2xl">
+                {/* Close button */}
+                <TouchableOpacity
+                  className="absolute top-4 right-4 bg-gray-200 rounded-full p-2 z-10"
+                  onPress={() => setSelectedCampaign(null)}
+                >
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+
+                {/* Campaign Image */}
+                {/* <Image
+                  source={{ uri: selectedCampaign.image }}
+                  className="w-full h-48 rounded-xl mb-4"
+                  resizeMode="cover"
+                /> */}
+
+                {/* Campaign Name */}
+                <Text className="text-2xl font-bold text-blue-800 mb-3 text-center">
+                  {selectedCampaign.name}
+                </Text>
+
+                {/* Divider */}
+                <View className="w-full h-px bg-gray-200 mb-4" />
+
+                {/* Description Section */}
+                <View className="mb-4">
+                  <View className="flex-row items-center mb-2">
+                    <Ionicons
+                      name="information-circle"
+                      size={20}
+                      color="#2563eb"
+                    />
+                    <Text className="text-base font-semibold text-gray-800 ml-2">
+                      Description
+                    </Text>
+                  </View>
+                  <Text className="text-base text-gray-700 leading-6">
+                    {selectedCampaign.description}
+                  </Text>
+                </View>
+
+                {/* Date Section */}
+                <View className="bg-blue-50 rounded-xl p-4 mb-4">
+                  <View className="flex-row items-center justify-between mb-2">
+                    <View className="flex-row items-center flex-1">
+                      <Ionicons
+                        name="calendar-outline"
+                        size={18}
+                        color="#2563eb"
+                      />
+                      <Text className="text-sm font-semibold text-gray-700 ml-2">
+                        Start Date
+                      </Text>
+                    </View>
+                    <Text className="text-sm font-bold text-blue-800">
+                      {new Date(selectedCampaign.startDate).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "2-digit",
+                          year: "numeric",
+                        }
+                      )}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <Ionicons
+                        name="calendar-outline"
+                        size={18}
+                        color="#dc2626"
+                      />
+                      <Text className="text-sm font-semibold text-gray-700 ml-2">
+                        End Date
+                      </Text>
+                    </View>
+                    <Text className="text-sm font-bold text-red-600">
+                      {new Date(selectedCampaign.endDate).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "2-digit",
+                          year: "numeric",
+                        }
+                      )}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Close Button */}
+                <TouchableOpacity
+                  className="bg-blue-600 py-3 rounded-full"
+                  onPress={() => setSelectedCampaign(null)}
+                >
+                  <Text className="text-white font-bold text-center text-base">
+                    Close
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
         </View>
 

@@ -27,71 +27,7 @@ export interface IPromotion {
   isUsageLimitReached: boolean;
 }
 
-const MOCK_PROMOTION_DATA: IPromotion[] = [
-  {
-    id: 1,
-    name: "10% Off Orders Over 1 Million VND",
-    description: "Applicable to phones and laptops.",
-    discountType: "PERCENTAGE",
-    discountValue: 10,
-    minOrderAmount: 1000000,
-    maxDiscountAmount: 500000,
-    usageLimit: 100,
-    usedCount: 20,
-    isActive: true,
-    startDate: "2025-10-01T00:00:00Z",
-    endDate: "2025-10-31T23:59:59Z",
-    campaignId: 101,
-    campaignName: "October Super Sale",
-    applicableProducts: [
-      { productId: 3, productName: "iPhone 17 Pro Max", sku: "IP17P-512-TIT" },
-      {
-        productId: 5,
-        productName: "MacBook Air M3 2024",
-        sku: "MBA13-M3-512-MID",
-      },
-      {
-        productId: 11,
-        productName: "iPhone 15 Pro Max",
-        sku: "IPHONE-15-PRO-MAX",
-      },
-    ],
-    remainingUsage: 80,
-    isExpired: false,
-    isUsageLimitReached: false,
-  },
-  {
-    id: 2,
-    name: "500K Off Orders Over 5 Million VND",
-    description: "Applicable to gaming products.",
-    discountType: "FIXED_AMOUNT",
-    discountValue: 500000,
-    minOrderAmount: 5000000,
-    maxDiscountAmount: 500000,
-    usageLimit: 50,
-    usedCount: 10,
-    isActive: true,
-    startDate: "2025-10-01T00:00:00Z",
-    endDate: "2025-10-15T23:59:59Z",
-    campaignId: 102,
-    campaignName: "Gaming Week",
-    applicableProducts: [
-      {
-        productId: 6,
-        productName: "MSI RTX 4080 Gaming X Trio",
-        sku: "MSI-RTX4080-GXT",
-      },
-      {
-        productId: 9,
-        productName: "ASUS ROG Strix Z790-E",
-        sku: "ASUS-ROG-Z790E",
-      },
-    ],
-    remainingUsage: 40,
-    isExpired: false,
-    isUsageLimitReached: false,
-  },
-];
+// Mock data removed - will use real API
 
 interface PromotionContextType {
   promotions: IPromotion[];
@@ -107,19 +43,14 @@ export const PromotionProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  // Facade API: lấy danh sách promotion (mock async)
+  // API call to get promotions (to be implemented with real API)
   const getPromotions = async (): Promise<IPromotion[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(MOCK_PROMOTION_DATA);
-      }, 300);
-    });
+    // TODO: Implement real API call
+    return [];
   };
 
   return (
-    <PromotionContext.Provider
-      value={{ promotions: MOCK_PROMOTION_DATA, getPromotions }}
-    >
+    <PromotionContext.Provider value={{ promotions: [], getPromotions }}>
       {children}
     </PromotionContext.Provider>
   );
