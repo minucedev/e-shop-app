@@ -1,31 +1,154 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+import { Address, authApi } from "@/services/authApi";
+import {
+  orderApi,
+  CreateOrderPayload,
+  OrderItemPayload,
+  ShippingInfo,
+  PaymentInfo,
+} from "@/services/orderApi";
 
 const CartPurchase = () => {
   const router = useRouter();
   const { cartItems } = useLocalSearchParams();
   const { user } = useAuth();
+  const { clearCart } = useCart();
 
-  // Parse cart items từ params
+  const [defaultAddress, setDefaultAddress] = useState<Address | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+  // Parse cart items from params
   const parsedCartItems = cartItems ? JSON.parse(cartItems as string) : [];
 
-  // State cho delivery method
-  const [selectedDelivery, setSelectedDelivery] = React.useState("standard");
+  // State for payment method
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    "COD" | "VNPAY"
+  >("COD");
 
-  // Thông tin giao hàng chỉ hiển thị, không chỉnh sửa
+  useEffect(() => {
+    const fetchDefaultAddress = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const response = await authApi.getUserAddresses(user.id);
+        if (response.success && response.data) {
+          const foundDefault = response.data.find((addr) => addr.isDefault);
+          if (foundDefault) {
+            setDefaultAddress(foundDefault);
+          } else if (response.data.length > 0) {
+            setDefaultAddress(response.data[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch address:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDefaultAddress();
+  }, [user]);
+
+  const handlePlaceOrder = async () => {
+    if (!user || !defaultAddress) {
+      Alert.alert(
+        "Error",
+        "User information or address is missing. Please try again."
+      );
+      return;
+    }
+
+    setIsPlacingOrder(true);
+
+    try {
+      if (selectedPaymentMethod === "COD") {
+        // NOTE: Using item.productId as productVariationId as the cart context does not support variations yet.
+        const orderItems: OrderItemPayload[] = parsedCartItems.map(
+          (item: any) => ({
+            productVariationId: item.productId,
+            quantity: item.quantity,
+          })
+        );
+
+        const shippingInfo: ShippingInfo = {
+          shippingName: `${user.firstName} ${user.lastName}`,
+          shippingPhone: user.phone || "N/A",
+          shippingEmail: user.email,
+          shippingAddress: defaultAddress.streetAddress,
+          shippingWard: defaultAddress.ward,
+          shippingDistrict: defaultAddress.district,
+          shippingCity: defaultAddress.city,
+          shippingPostalCode: defaultAddress.postalCode,
+          shippingCountry: "Vietnam",
+          shippingMethod: "STANDARD",
+          deliveryInstructions: "Gọi trước khi giao hàng",
+        };
+
+        const paymentInfo: PaymentInfo = {
+          paymentMethod: "COD",
+        };
+
+        const payload: CreateOrderPayload = {
+          orderItems,
+          shippingInfo,
+          paymentInfo,
+          note: "Đơn hàng test",
+          voucherCode: "NEWUSER15",
+          returnUrl: "myapp://callback",
+        };
+
+        const response = await orderApi.createOrder(payload);
+
+        if (response.success) {
+          Alert.alert(
+            "Order Placed!",
+            "Your order has been successfully placed. Let's continue shopping!",
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  clearCart();
+                  router.replace("/(app)/(tabs)/shop");
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert("Order Failed", response.error || "An error occurred.");
+        }
+      } else if (selectedPaymentMethod === "VNPAY") {
+        Alert.alert("Coming Soon", "VNPay payment is not yet implemented.");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", "An unexpected error occurred: " + error.message);
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
+  // Delivery info derived from user and address state
   const deliveryInfo = {
-    name: user?.firstName || "Cannot get name",
+    name: user ? `${user.firstName} ${user.lastName}` : "Cannot get name",
     email: user?.email || "Cannot get email",
-    address: user?.address || "Cannot get address",
+    address: defaultAddress
+      ? `${defaultAddress.streetAddress}, ${defaultAddress.ward}, ${defaultAddress.district}, ${defaultAddress.city}`
+      : "No address found. Please add one.",
   };
 
   return (
@@ -61,24 +184,28 @@ const CartPurchase = () => {
             </Text>
           </View>
           {/* Address */}
-          <View className="h-12 rounded-full border border-gray-300 px-5 mb-2 bg-white justify-center">
-            <Text className="text-base text-gray-900">
-              {deliveryInfo.address}
-            </Text>
+          <View className="min-h-[48px] rounded-full border border-gray-300 px-5 py-3 mb-2 bg-white justify-center">
+            {isLoading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text className="text-base text-gray-900" numberOfLines={2}>
+                {deliveryInfo.address}
+              </Text>
+            )}
           </View>
         </View>
 
-        {/* Delivery Method */}
+        {/* Payment Method */}
         <View className="px-5 mt-8">
           <Text className="text-xl font-bold text-black mb-4">
-            Delivery Method
+            Payment Method
           </Text>
 
-          {/* Standard Delivery */}
+          {/* COD */}
           <TouchableOpacity
-            onPress={() => setSelectedDelivery("standard")}
+            onPress={() => setSelectedPaymentMethod("COD")}
             className={`flex-row items-center p-4 rounded-2xl mb-3 ${
-              selectedDelivery === "standard"
+              selectedPaymentMethod === "COD"
                 ? "border-2 border-black bg-gray-50"
                 : "border border-gray-300"
             }`}
@@ -86,29 +213,25 @@ const CartPurchase = () => {
           >
             <Ionicons
               name={
-                selectedDelivery === "standard"
+                selectedPaymentMethod === "COD"
                   ? "checkmark-circle"
                   : "ellipse-outline"
               }
               size={24}
-              color={selectedDelivery === "standard" ? "#000" : "#666"}
+              color={selectedPaymentMethod === "COD" ? "#000" : "#666"}
             />
             <View className="flex-1 ml-3">
               <Text className="text-base font-bold text-black">
-                Standard Delivery
-              </Text>
-              <Text className="text-sm text-gray-600">
-                Arrives in 4-6 business days
+                Cash on Delivery (COD)
               </Text>
             </View>
-            <Text className="text-base font-bold text-black">Free</Text>
           </TouchableOpacity>
 
-          {/* Express Delivery */}
+          {/* VNPay */}
           <TouchableOpacity
-            onPress={() => setSelectedDelivery("express")}
+            onPress={() => setSelectedPaymentMethod("VNPAY")}
             className={`flex-row items-center p-4 rounded-2xl mb-3 ${
-              selectedDelivery === "express"
+              selectedPaymentMethod === "VNPAY"
                 ? "border-2 border-black bg-gray-50"
                 : "border border-gray-300"
             }`}
@@ -116,22 +239,16 @@ const CartPurchase = () => {
           >
             <Ionicons
               name={
-                selectedDelivery === "express"
+                selectedPaymentMethod === "VNPAY"
                   ? "checkmark-circle"
                   : "ellipse-outline"
               }
               size={24}
-              color={selectedDelivery === "express" ? "#000" : "#666"}
+              color={selectedPaymentMethod === "VNPAY" ? "#000" : "#666"}
             />
             <View className="flex-1 ml-3">
-              <Text className="text-base font-bold text-black">
-                Express Delivery
-              </Text>
-              <Text className="text-sm text-gray-600">
-                Arrives in 1-2 business days
-              </Text>
+              <Text className="text-base font-bold text-black">VNPay</Text>
             </View>
-            <Text className="text-base font-bold text-black">$5.99</Text>
           </TouchableOpacity>
         </View>
 
@@ -139,9 +256,9 @@ const CartPurchase = () => {
         <View className="h-20" />
       </ScrollView>
 
-      {/* Tổng tiền và Continue Button - Fixed at bottom */}
+      {/* Total and Continue Button - Fixed at bottom */}
       <View className="px-5 pb-8 pt-4 bg-white border-t border-gray-100">
-        {/* Tính tổng tiền */}
+        {/* Total calculation */}
         {(() => {
           const subtotal = parsedCartItems.reduce(
             (total: number, item: { price: string; quantity: number }) => {
@@ -150,8 +267,7 @@ const CartPurchase = () => {
             },
             0
           );
-          const expressFee = selectedDelivery === "express" ? 5.99 : 0;
-          const total = subtotal + expressFee;
+          const total = subtotal;
           return (
             <View className="mb-4">
               <View className="flex-row justify-between items-center mb-2">
@@ -160,16 +276,6 @@ const CartPurchase = () => {
                   ${subtotal.toFixed(2)}
                 </Text>
               </View>
-              {selectedDelivery === "express" && (
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-base text-gray-600">
-                    Express Delivery Fee
-                  </Text>
-                  <Text className="text-base font-semibold text-gray-900">
-                    $5.99
-                  </Text>
-                </View>
-              )}
               <View className="flex-row justify-between items-center mb-2">
                 <Text className="text-lg font-bold text-black">Total</Text>
                 <Text className="text-lg font-bold text-black">
@@ -182,16 +288,14 @@ const CartPurchase = () => {
         <TouchableOpacity
           className="bg-black rounded-full h-14 items-center justify-center"
           activeOpacity={0.8}
-          onPress={() => {
-            // TODO: Process checkout
-            console.log("Processing checkout...", {
-              deliveryInfo,
-              selectedDelivery,
-              cartItems: parsedCartItems,
-            });
-          }}
+          onPress={handlePlaceOrder}
+          disabled={isPlacingOrder || isLoading}
         >
-          <Text className="text-white text-lg font-bold">Continue</Text>
+          {isPlacingOrder ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text className="text-white text-lg font-bold">Place Order</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

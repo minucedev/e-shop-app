@@ -3,20 +3,32 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TokenStorage } from "@/utils/authUtils";
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 function getApiBaseUrl() {
-  // Ưu tiên biến môi trường nếu có
-  if (process.env.EXPO_PUBLIC_API_BASE_URL) {
-    return process.env.EXPO_PUBLIC_API_BASE_URL;
+  // Lấy IP từ manifest (khi chạy Expo trên thiết bị thật)
+  const expoDebuggerHost = Constants.expoConfig?.hostUri;
+
+  if (expoDebuggerHost) {
+    // Khi chạy trên thiết bị thật qua Expo, lấy IP từ debuggerHost
+    // Format: "192.168.x.x:8081" -> lấy phần IP
+    const ip = expoDebuggerHost.split(":")[0];
+    const url = `http://${ip}:8081/api`;
+    console.log(`📡 API Base URL (Expo Device): ${url}`);
+    return url;
   }
-  // Lấy IP máy chạy Metro bundler
-  const manifest = Constants.manifest || (Constants as any).expoConfig;
-  let debuggerHost = manifest?.debuggerHost;
-  if (!debuggerHost && manifest?.hostUri) {
-    debuggerHost = manifest.hostUri;
+
+  // Fallback cho Android Emulator
+  if (Platform.OS === "android") {
+    const url = `http://10.0.2.2:8081/api`;
+    console.log(`📡 API Base URL (Android Emulator): ${url}`);
+    return url;
   }
-  const ip = debuggerHost ? debuggerHost.split(":")[0] : "localhost";
-  return `http://${ip}:8081/api`;
+
+  // Fallback cho iOS Simulator
+  const url = `http://localhost:8081/api`;
+  console.log(`📡 API Base URL (iOS Simulator): ${url}`);
+  return url;
 }
 
 const API_BASE_URL = getApiBaseUrl();
@@ -244,24 +256,15 @@ class ApiClient {
         console.error(`API Error [${endpoint}]:`, error);
       }
 
-      // Better error handling for network issues
-      if (
+      // Re-throw the error with a clear message so the caller can handle it.
+      const errorMessage =
         error.name === "TypeError" &&
         error.message.includes("Network request failed")
-      ) {
-        return {
-          success: false,
-          error:
-            "Network connection error. Please check your internet connection.",
-        };
-      }
+          ? "Network connection error. Please check your internet connection and server address."
+          : error.message ||
+            "An unexpected error occurred. Please try again later.";
 
-      return {
-        success: false,
-        error:
-          error.message ||
-          "An unexpected error occurred. Please try again later.",
-      };
+      throw new Error(errorMessage);
     }
   }
 

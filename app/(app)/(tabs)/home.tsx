@@ -46,17 +46,47 @@ const Home = () => {
 
   const renderProductItem = ({ item }: { item: (typeof products)[0] }) => {
     const isItemFavorite = isFavorite(item.id);
+
+    // Calculate discount percentage for display
+    const discountPercent =
+      item.discountType === "PERCENTAGE"
+        ? item.discountValue
+        : item.discountValue
+          ? Math.round(
+              ((item.displayOriginalPrice - item.displaySalePrice) /
+                item.displayOriginalPrice) *
+                100
+            )
+          : 0;
+
+    const hasDiscount = item.displayOriginalPrice > item.displaySalePrice;
+
     return (
-      <TouchableOpacity className="mr-4 w-48 bg-white rounded-xl shadow-lg border border-gray-100">
+      <TouchableOpacity
+        className="mr-4 w-48 bg-white rounded-xl shadow-lg border border-gray-100"
+        onPress={() =>
+          router.push(`/(app)/(screens)/product-detail?id=${item.id}`)
+        }
+      >
         {/* Product Image */}
         <View className="relative">
           <View className="bg-gray-50 w-32 h-32 rounded-t-xl items-center justify-center overflow-hidden">
             <Image
-              source={{ uri: item.image }}
+              source={{
+                uri: item.imageUrl || "https://via.placeholder.com/150",
+              }}
               className="w-full h-full"
               resizeMode="cover"
             />
           </View>
+          {/* Discount Badge */}
+          {hasDiscount && (
+            <View className="absolute top-2 left-2 bg-red-500 rounded-full px-2 py-1">
+              <Text className="text-white text-xs font-bold">
+                -{discountPercent}%
+              </Text>
+            </View>
+          )}
           {/* Favorite Icon */}
           <TouchableOpacity
             className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
@@ -81,15 +111,27 @@ const Home = () => {
           >
             {item.name}
           </Text>
-          <Text className="text-xs text-gray-500 mb-2" numberOfLines={2}>
-            {item.description}
-          </Text>
+
+          {/* Rating */}
+          <View className="flex-row items-center mb-2">
+            <Ionicons name="star" size={14} color="#FFA500" />
+            <Text className="text-xs text-gray-600 ml-1">
+              {item.averageRating.toFixed(1)} ({item.totalRatings})
+            </Text>
+          </View>
 
           {/* Price and Cart */}
           <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-bold text-blue-600">
-              {formatPrice(item.price)}
-            </Text>
+            <View>
+              {hasDiscount && (
+                <Text className="text-xs text-gray-400 line-through">
+                  {formatPrice(item.displayOriginalPrice)}
+                </Text>
+              )}
+              <Text className="text-lg font-bold text-blue-600">
+                {formatPrice(item.displaySalePrice)}
+              </Text>
+            </View>
 
             {/* Add to Cart Button */}
             <TouchableOpacity
@@ -324,13 +366,23 @@ const Home = () => {
             data={products.slice(6, 9)}
             renderItem={({ item }) => {
               const isItemFavorite = isFavorite(item.id);
+              const hasDiscount =
+                item.displayOriginalPrice > item.displaySalePrice;
               return (
-                <TouchableOpacity className="mr-4 w-40 bg-white rounded-xl shadow-lg border border-gray-100">
+                <TouchableOpacity
+                  className="mr-4 w-40 bg-white rounded-xl shadow-lg border border-gray-100"
+                  onPress={() =>
+                    router.push(`/(app)/(screens)/product-detail?id=${item.id}`)
+                  }
+                >
                   {/* Product Image */}
                   <View className="relative">
                     <View className="bg-gray-50 h-28 rounded-t-xl items-center justify-center overflow-hidden">
                       <Image
-                        source={{ uri: item.image }}
+                        source={{
+                          uri:
+                            item.imageUrl || "https://via.placeholder.com/150",
+                        }}
                         className="w-full h-full"
                         resizeMode="cover"
                       />
@@ -364,9 +416,16 @@ const Home = () => {
                       {item.name}
                     </Text>
                     <View className="flex-row items-center justify-between">
-                      <Text className="text-base font-bold text-blue-600">
-                        {formatPrice(item.price)}
-                      </Text>
+                      <View>
+                        {hasDiscount && (
+                          <Text className="text-xs text-gray-400 line-through">
+                            {formatPrice(item.displayOriginalPrice)}
+                          </Text>
+                        )}
+                        <Text className="text-base font-bold text-blue-600">
+                          {formatPrice(item.displaySalePrice)}
+                        </Text>
+                      </View>
 
                       {/* Add to Cart Button */}
                       <TouchableOpacity

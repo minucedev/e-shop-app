@@ -1,0 +1,112 @@
+[33m0934395[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mapi/product[m[33m, [m[1;31morigin/api/product[m[33m)[m HEAD@{0}: commit (merge): Resolve merge conflict
+[33m9fa2ba7[m HEAD@{1}: commit: get campaign api + show
+[33md0f532d[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{2}: checkout: moving from main to api/product
+[33md0f532d[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{3}: merge api/login: Merge made by the 'ort' strategy.
+[33m12b8aab[m[33m ([m[1;32mbuild/apk[m[33m)[m HEAD@{4}: checkout: moving from api/login to main
+[33m34be0c2[m[33m ([m[1;31morigin/api/login[m[33m, [m[1;32mapi/login[m[33m)[m HEAD@{5}: commit: complete auth + address + user info
+[33mb20bcbc[m HEAD@{6}: checkout: moving from main to api/login
+[33m12b8aab[m[33m ([m[1;32mbuild/apk[m[33m)[m HEAD@{7}: checkout: moving from build/apk to main
+[33m12b8aab[m[33m ([m[1;32mbuild/apk[m[33m)[m HEAD@{8}: checkout: moving from main to build/apk
+[33m12b8aab[m[33m ([m[1;32mbuild/apk[m[33m)[m HEAD@{9}: checkout: moving from api/product to main
+[33me717df1[m HEAD@{10}: commit: some changes on this branch
+[33m4158582[m HEAD@{11}: commit: complete integration product api + add screen detail product
+[33m12b8aab[m[33m ([m[1;32mbuild/apk[m[33m)[m HEAD@{12}: checkout: moving from main to api/product
+[33m12b8aab[m[33m ([m[1;32mbuild/apk[m[33m)[m HEAD@{13}: commit: fix typecast in cartpurchase
+[33m73dd59e[m HEAD@{14}: merge api/login: Merge made by the 'ort' strategy.
+[33mce50224[m[33m ([m[1;31morigin/feature/screens[m[33m, [m[1;32mfeature/screens[m[33m)[m HEAD@{15}: merge feature/screens: Fast-forward
+[33m067419e[m HEAD@{16}: checkout: moving from feature/screens to main
+[33mce50224[m[33m ([m[1;31morigin/feature/screens[m[33m, [m[1;32mfeature/screens[m[33m)[m HEAD@{17}: checkout: moving from feature/cart to feature/screens
+[33md375408[m HEAD@{18}: checkout: moving from feature/screens to feature/cart
+[33mce50224[m[33m ([m[1;31morigin/feature/screens[m[33m, [m[1;32mfeature/screens[m[33m)[m HEAD@{19}: checkout: moving from main to feature/screens
+[33m067419e[m HEAD@{20}: checkout: moving from api/login to main
+[33mb20bcbc[m HEAD@{21}: checkout: moving from feature/screens to api/login
+[33mce50224[m[33m ([m[1;31morigin/feature/screens[m[33m, [m[1;32mfeature/screens[m[33m)[m HEAD@{22}: checkout: moving from api/login to feature/screens
+[33mb20bcbc[m HEAD@{23}: commit: fix error login + make ip dynamic
+[33m3afb55d[m HEAD@{24}: commit: complete signup + login api integration
+[33ma25b7d3[m HEAD@{25}: commit: integrate login api + user api
+[33m4072966[m HEAD@{26}: checkout: moving from feature/screens to api/login
+[33mce50224[m[33m ([m[1;31morigin/feature/screens[m[33m, [m[1;32mfeature/screens[m[33m)[m HEAD@{27}: commit: complete basic screens except detail
+[33m4072966[m HEAD@{28}: commit: add promotion + privacy screen, make change UI profile screen
+[33md375408[m HEAD@{29}: checkout: moving from feature/cart to feature/screens
+[33md375408[m HEAD@{30}: commit: update version
+[33mce6373d[m HEAD@{31}: checkout: moving from main to feature/cart
+[33m067419e[m HEAD@{32}: checkout: moving from feature/cart to main
+[33mce6373d[m HEAD@{33}: commit: update readme
+[33m067419e[m HEAD@{34}: checkout: moving from feature/cart to feature/cart
+[33m067419e[m HEAD@{35}: checkout: moving from main to feature/cart
+[33m067419e[m HEAD@{36}: merge feature/cart: Fast-forward
+[33m2c1eba9[m HEAD@{37}: checkout: moving from feature/cart to main
+[33m067419e[m HEAD@{38}: commit: add product context + favorite context
+[33mbe730ee[m HEAD@{39}: commit: add purchase screen
+[33mbcf0d14[m HEAD@{40}: commit: modify cart
+[33m2c1eba9[m HEAD@{41}: checkout: moving from main to feature/cart
+[33m2c1eba9[m HEAD@{42}: merge feature/favorites: Fast-forward
+[33m772a1bf[m HEAD@{43}: checkout: moving from feature/favorites to main
+[33m2c1eba9[m HEAD@{44}: commit: complete screen favorites
+[33m772a1bf[m HEAD@{45}: checkout: moving from feature/home to feature/favorites
+[33m3cc64a7[m HEAD@{46}: merge main: Merge made by the 'ort' strategy.
+[33m627d3b9[m HEAD@{47}: checkout: moving from feature/favorites to feature/home
+[33m772a1bf[m HEAD@{48}: checkout: moving from main to feature/favorites
+[33m772a1bf[m HEAD@{49}: commit (merge): Merge branch 'feature/shop'
+[33mdb8755e[m HEAD@{50}: checkout: moving from feature/profile to main
+[33m585d4e9[m HEAD@{51}: checkout: moving from main to feature/profile
+[33mdb8755e[m HEAD@{52}: commit: change search
+[33m6906951[m HEAD@{53}: checkout: moving from feature/home to main
+[33m627d3b9[m HEAD@{54}: commit: change search
+[33m6906951[m HEAD@{55}: checkout: moving from feature/shop to feature/home
+[33m41eac58[m HEAD@{56}: checkout: moving from feature/home to feature/shop
+[33m6906951[m HEAD@{57}: checkout: moving from feature/shop to feature/home
+[33m6906951[m HEAD@{58}: checkout: moving from main to feature/shop
+[33m6906951[m HEAD@{59}: checkout: moving from fix-shop-screen to main
+[33m098437a[m HEAD@{60}: checkout: moving from 098437af28705c75b181bc1ce1b407f86b05229a to fix-shop-screen
+[33m098437a[m HEAD@{61}: checkout: moving from feature/shop to 098437af28705c75b181bc1ce1b407f86b05229a
+[33m41eac58[m HEAD@{62}: checkout: moving from main to feature/shop
+[33m6906951[m HEAD@{63}: checkout: moving from feature/shop to main
+[33m41eac58[m HEAD@{64}: checkout: moving from feature/home to feature/shop
+[33m6906951[m HEAD@{65}: checkout: moving from feature/shop to feature/home
+[33m41eac58[m HEAD@{66}: commit: complete shop screen
+[33m098437a[m HEAD@{67}: checkout: moving from main to feature/shop
+[33m6906951[m HEAD@{68}: merge feature/home: Fast-forward
+[33ma1ab347[m HEAD@{69}: checkout: moving from feature/home to main
+[33m6906951[m HEAD@{70}: commit: modify search bar
+[33ma1ab347[m HEAD@{71}: checkout: moving from main to feature/home
+[33ma1ab347[m HEAD@{72}: checkout: moving from feature/home to main
+[33ma1ab347[m HEAD@{73}: checkout: moving from feature/shop to feature/home
+[33m098437a[m HEAD@{74}: commit: complete shop screen
+[33ma1ab347[m HEAD@{75}: checkout: moving from main to feature/shop
+[33ma1ab347[m HEAD@{76}: checkout: moving from feature/home to main
+[33ma1ab347[m HEAD@{77}: checkout: moving from main to feature/home
+[33ma1ab347[m HEAD@{78}: merge feature/home: Fast-forward
+[33mca7a7a5[m HEAD@{79}: checkout: moving from feature/home to main
+[33ma1ab347[m HEAD@{80}: commit: complete homescreen component
+[33m585d4e9[m HEAD@{81}: checkout: moving from feature/profile to feature/home
+[33m585d4e9[m HEAD@{82}: checkout: moving from ten-nhanh-2 to feature/profile
+[33m585d4e9[m HEAD@{83}: checkout: moving from feature/profile to ten-nhanh-2
+[33m585d4e9[m HEAD@{84}: commit: dummy test
+[33md789adc[m HEAD@{85}: reset: moving to HEAD
+[33md789adc[m HEAD@{86}: checkout: moving from feature/home to feature/profile
+[33md789adc[m HEAD@{87}: checkout: moving from feature/profile to feature/home
+[33md789adc[m HEAD@{88}: reset: moving to HEAD
+[33md789adc[m HEAD@{89}: checkout: moving from feature/profile to feature/profile
+[33md789adc[m HEAD@{90}: checkout: moving from feature/home to feature/profile
+[33md789adc[m HEAD@{91}: checkout: moving from feature/home to feature/home
+[33md789adc[m HEAD@{92}: checkout: moving from feature/profile to feature/home
+[33md789adc[m HEAD@{93}: commit: create screen address + modify info
+[33m2594989[m HEAD@{94}: checkout: moving from minuce-code to feature/profile
+[33m2594989[m HEAD@{95}: commit: create tab bar + profile screen
+[33mca7a7a5[m HEAD@{96}: checkout: moving from main to minuce-code
+[33mca7a7a5[m HEAD@{97}: checkout: moving from minuce-code to main
+[33mca7a7a5[m HEAD@{98}: checkout: moving from main to minuce-code
+[33mca7a7a5[m HEAD@{99}: merge minuce-code: Fast-forward
+[33mddb5860[m HEAD@{100}: checkout: moving from minuce-code to main
+[33mca7a7a5[m HEAD@{101}: commit: create reset password screen + add erro pop up
+[33mc8bcc90[m HEAD@{102}: commit: make basic sign up / log in logic with async storage
+[33m7defed6[m HEAD@{103}: commit: add basic flow auth + modify project structure
+[33m817e7dc[m HEAD@{104}: commit: add error page
+[33m5d15ad8[m HEAD@{105}: reset: moving to origin/minuce-code
+[33m5d15ad8[m HEAD@{106}: checkout: moving from minuce-code to minuce-code
+[33m5d15ad8[m HEAD@{107}: commit: add name+date field to signup screen
+[33m5146c8d[m HEAD@{108}: commit: create sign-up
+[33m8f3905f[m HEAD@{109}: commit: create homescreen + login page
+[33mddb5860[m HEAD@{110}: checkout: moving from main to minuce-code
+[33mddb5860[m HEAD@{111}: clone: from https://github.com/minucedev/e-shop-app.git

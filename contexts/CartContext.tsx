@@ -75,14 +75,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const totalAmount = React.useMemo(() => {
     return cartItems.reduce((total, item) => {
       const product = getProductById(item.productId);
-      if (product) {
-        // Remove $ and convert to number
-        const priceStr =
-          typeof product.price === "string"
-            ? product.price
-            : product.price.toString();
-        const price = parseFloat(priceStr.replace("$", ""));
-        return total + price * item.quantity;
+      if (product && product.displaySalePrice) {
+        // Use displaySalePrice from API (already a number)
+        return total + product.displaySalePrice * item.quantity;
       }
       return total;
     }, 0);
