@@ -87,7 +87,7 @@ const Shop = () => {
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="px-6 pt-8 pb-2 bg-white">
+      <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
         <View className="flex-row items-center justify-between">
           <Text className="text-gray-900 text-2xl font-bold">Shop</Text>
           <Text className="text-gray-500 text-sm">
@@ -257,17 +257,17 @@ const Shop = () => {
                       </Text>
                     </View>
 
-                    {/* Add to Cart Button */}
+                    {/* View Detail Button */}
                     <TouchableOpacity
-                      className="bg-blue-500 p-2 rounded-full"
-                      onPress={async (e) => {
+                      // className="bg-blue-500 p-2 rounded-full"
+                      onPress={(e) => {
                         e.stopPropagation();
-                        await addToCart(item.id.toString());
-                        router.push("/(app)/(tabs)/cart");
+                        router.push({
+                          pathname: "/(app)/(screens)/product-detail",
+                          params: { id: item.id.toString() },
+                        });
                       }}
-                    >
-                      <Ionicons name="add" size={14} color="white" />
-                    </TouchableOpacity>
+                    ></TouchableOpacity>
                   </View>
                 </View>
               </TouchableOpacity>

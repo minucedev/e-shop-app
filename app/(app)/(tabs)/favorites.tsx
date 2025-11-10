@@ -63,16 +63,18 @@ const Favorites = () => {
     );
   };
 
-  // Hàm thêm sản phẩm vào giỏ hàng
-  const handleAddToCart = async (productId: string) => {
-    await addToCart(productId);
-    router.push("/(app)/(tabs)/cart");
+  // Hàm xem chi tiết sản phẩm
+  const handleViewDetail = (productId: string) => {
+    router.push({
+      pathname: "/(app)/(screens)/product-detail",
+      params: { id: productId },
+    });
   };
 
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="pt-12 px-4 pb-4 bg-white flex-row items-center justify-between shadow-sm">
+      <View className="px-6 py-4 bg-white flex-row items-center justify-between border-b border-gray-100 shadow-sm">
         <Text className="text-2xl font-bold text-gray-900">Favorites</Text>
         <TouchableOpacity onPress={handleClearFavorites} activeOpacity={0.7}>
           <Text className="text-red-500 font-semibold text-base">Clear</Text>
@@ -107,14 +109,17 @@ const Favorites = () => {
                   className="bg-white rounded-xl shadow-lg border border-gray-100 w-[48%]"
                   activeOpacity={0.8}
                   onPress={() => {
-                    /* TODO: chuyển sang trang chi tiết sản phẩm */
+                    handleViewDetail(item.id.toString());
                   }}
                 >
                   {/* Product Image */}
                   <View className="relative">
                     <View className="bg-gray-50 h-32 mr-5 rounded-xl items-center justify-center overflow-hidden">
                       <Image
-                        source={{ uri: item.image }}
+                        source={{
+                          uri:
+                            item.imageUrl || "https://via.placeholder.com/150",
+                        }}
                         className="w-full h-full"
                         resizeMode="cover"
                       />
@@ -140,29 +145,27 @@ const Favorites = () => {
                     >
                       {item.name}
                     </Text>
-                    <Text
-                      className="text-xs text-gray-500 mb-2"
-                      numberOfLines={2}
-                    >
-                      {item.description}
-                    </Text>
+                    <View className="flex-row items-center mb-2">
+                      <Ionicons name="star" size={14} color="#FFA500" />
+                      <Text className="text-xs text-gray-600 ml-1">
+                        {item.averageRating.toFixed(1)} ({item.totalRatings})
+                      </Text>
+                    </View>
 
-                    {/* Price and Add to Cart */}
+                    {/* Price and View Detail */}
                     <View className="flex-row items-center justify-between">
                       <Text className="text-lg font-bold text-blue-600">
-                        {formatPrice(item.price)}
+                        {formatPrice(item.displaySalePrice)}
                       </Text>
 
-                      {/* Add to Cart Button */}
+                      {/* View Detail Button */}
                       <TouchableOpacity
-                        className="bg-blue-500 p-2 rounded-full"
-                        onPress={async (e) => {
+                        // className="bg-blue-500 p-2 rounded-full"
+                        onPress={(e) => {
                           e.stopPropagation();
-                          await handleAddToCart(item.id.toString());
+                          handleViewDetail(item.id.toString());
                         }}
-                      >
-                        <Ionicons name="add" size={16} color="white" />
-                      </TouchableOpacity>
+                      ></TouchableOpacity>
                     </View>
                   </View>
                 </TouchableOpacity>

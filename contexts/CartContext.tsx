@@ -1,219 +1,223 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
-import { useProduct } from "./ProductContext";
+import {
+  getCart as fetchCart,
+  addToCart as addToCartApi,
+  updateCartItem as updateCartItemApi,
+  removeCartItem as removeCartItemApi,
+  clearCart as clearCartApi,
+  CartResponse,
+  CartItemResponse,
+} from "@/services/cartApi";
 
-// Định nghĩa CartItem
-export interface CartItem {
-  id: string; // cart item id (unique)
-  productId: string; // reference to Product.id
-  quantity: number; // max 10
-  addedAt: number; // timestamp
-}
+// Export types from API
+export type { CartItemResponse, CartResponse };
 
 type CartContextType = {
-  cartItems: CartItem[];
+  cart: CartResponse | null;
+  cartItems: CartItemResponse[];
   totalAmount: number;
   itemCount: number;
   isLoading: boolean;
-  addToCart: (productId: string, quantity?: number) => Promise<void>;
-  removeFromCart: (cartItemId: string) => Promise<void>;
-  updateQuantity: (cartItemId: string, quantity: number) => Promise<void>;
+  error: string | null;
+  updatingItems: Set<number>;
+  refreshCart: () => Promise<void>;
+  addToCart: (productVariationId: number, quantity?: number) => Promise<void>;
+  removeFromCart: (productVariationId: number) => Promise<void>;
+  updateQuantity: (
+    productVariationId: number,
+    quantity: number
+  ) => Promise<void>;
   clearCart: () => Promise<void>;
-  getCartItem: (productId: string) => CartItem | undefined;
-  getCartItemById: (cartItemId: string) => CartItem | undefined;
+  getCartItemByVariationId: (
+    productVariationId: number
+  ) => CartItemResponse | undefined;
+  formatPrice: (price: number) => string;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = "CART_ITEMS";
-const MAX_QUANTITY_PER_ITEM = 10;
-
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { getProductById } = useProduct();
+  const [error, setError] = useState<string | null>(null);
+  const [updatingItems, setUpdatingItems] = useState<Set<number>>(new Set());
 
-  // Restore cart on app start
+  // Derived values
+  const cartItems = cart?.items || [];
+  const totalAmount = cart?.summary.totalAmount || 0;
+  const itemCount = cart?.summary.totalQuantity || 0;
+
+  // Fetch cart from API
+  const refreshCart = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const cartData = await fetchCart();
+      setCart(cartData);
+    } catch (err: any) {
+      console.error("Failed to fetch cart:", err);
+      setError(err.message || "Failed to load cart");
+      // Don't show toast on initial load failure
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load cart on mount
   useEffect(() => {
-    const initCart = async () => {
-      try {
-        const storedCart = await AsyncStorage.getItem(CART_STORAGE_KEY);
-        if (storedCart) {
-          const parsedCart: CartItem[] = JSON.parse(storedCart);
-          setCartItems(parsedCart);
-        }
-      } catch (error) {
-        console.error("Failed to load cart:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to load cart data",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    initCart();
+    refreshCart();
   }, []);
 
-  // Save cart to storage whenever cartItems changes
-  const saveCartToStorage = async (items: CartItem[]) => {
-    try {
-      await AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-    } catch (error) {
-      console.error("Failed to save cart:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to save cart data",
-      });
-    }
-  };
-
-  // Calculate total amount using ProductContext
-  const totalAmount = React.useMemo(() => {
-    return cartItems.reduce((total, item) => {
-      const product = getProductById(item.productId);
-      if (product && product.displaySalePrice) {
-        // Use displaySalePrice from API (already a number)
-        return total + product.displaySalePrice * item.quantity;
-      }
-      return total;
-    }, 0);
-  }, [cartItems, getProductById]);
-
-  // Calculate total item count
-  const itemCount = React.useMemo(() => {
-    return cartItems.reduce((count, item) => count + item.quantity, 0);
-  }, [cartItems]);
-
   // Add item to cart
-  const addToCart = async (productId: string, quantity: number = 1) => {
+  const addToCart = async (
+    productVariationId: number,
+    quantity: number = 1
+  ) => {
     try {
-      const product = getProductById(productId);
-      if (!product) {
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Product not found",
-        });
-        return;
-      }
-
-      // Check if product already in cart
-      const existingItem = cartItems.find(
-        (item) => item.productId === productId
-      );
-
-      if (existingItem) {
-        const newQuantity = existingItem.quantity + quantity;
-        if (newQuantity > MAX_QUANTITY_PER_ITEM) {
-          Toast.show({
-            type: "error",
-            text1: "Limit Reached",
-            text2: `Cannot add more than ${MAX_QUANTITY_PER_ITEM} items`,
-          });
-          return;
-        }
-        await updateQuantity(existingItem.id, newQuantity);
-      } else {
-        if (quantity > MAX_QUANTITY_PER_ITEM) {
-          Toast.show({
-            type: "error",
-            text1: "Limit Reached",
-            text2: `Cannot add more than ${MAX_QUANTITY_PER_ITEM} items`,
-          });
-          return;
-        }
-
-        const newCartItem: CartItem = {
-          id: `cart_${Date.now()}_${Math.random()}`,
-          productId,
-          quantity,
-          addedAt: Date.now(),
-        };
-
-        const updatedItems = [...cartItems, newCartItem];
-        setCartItems(updatedItems);
-        await saveCartToStorage(updatedItems);
-
-        Toast.show({
-          type: "success",
-          text1: "Added to Cart",
-          text2: `${product.name} added successfully`,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to add to cart:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to add item to cart",
-      });
-    }
-  };
-
-  // Remove item from cart
-  const removeFromCart = async (cartItemId: string) => {
-    try {
-      const itemToRemove = cartItems.find((item) => item.id === cartItemId);
-      const updatedItems = cartItems.filter((item) => item.id !== cartItemId);
-      setCartItems(updatedItems);
-      await saveCartToStorage(updatedItems);
-
-      if (itemToRemove) {
-        const product = getProductById(itemToRemove.productId);
-        Toast.show({
-          type: "success",
-          text1: "Removed from Cart",
-          text2: `${product?.name || "Item"} removed successfully`,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to remove from cart:", error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to remove item from cart",
-      });
-    }
-  };
-
-  // Update quantity
-  const updateQuantity = async (cartItemId: string, quantity: number) => {
-    try {
-      if (quantity <= 0) {
-        await removeFromCart(cartItemId);
-        return;
-      }
-
-      if (quantity > MAX_QUANTITY_PER_ITEM) {
-        Toast.show({
-          type: "error",
-          text1: "Limit Reached",
-          text2: `Cannot add more than ${MAX_QUANTITY_PER_ITEM} items`,
-        });
-        return;
-      }
-
-      const updatedItems = cartItems.map((item) =>
-        item.id === cartItemId ? { ...item, quantity } : item
-      );
-      setCartItems(updatedItems);
-      await saveCartToStorage(updatedItems);
+      setIsLoading(true);
+      const updatedCart = await addToCartApi(productVariationId, quantity);
+      setCart(updatedCart);
 
       Toast.show({
         type: "success",
-        text1: "Updated",
-        text2: "Quantity updated successfully",
+        text1: "Đã thêm vào giỏ hàng",
+        text2: "Sản phẩm đã được thêm thành công",
       });
-    } catch (error) {
-      console.error("Failed to update quantity:", error);
+    } catch (err: any) {
+      console.error("Failed to add to cart:", err);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Failed to update quantity",
+        text1: "Lỗi",
+        text2: err.message || "Không thể thêm vào giỏ hàng",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Remove item from cart with optimistic update
+  const removeFromCart = async (productVariationId: number) => {
+    if (!cart) return;
+
+    try {
+      // Optimistic update - remove item immediately from UI
+      const itemToRemove = cart.items.find(
+        (item) => item.productVariationId === productVariationId
+      );
+
+      if (itemToRemove) {
+        const optimisticCart = { ...cart };
+        optimisticCart.items = optimisticCart.items.filter(
+          (item) => item.productVariationId !== productVariationId
+        );
+
+        // Update summary
+        optimisticCart.summary.totalQuantity -= itemToRemove.quantity;
+        optimisticCart.summary.totalAmount -= itemToRemove.totalPrice;
+        optimisticCart.summary.uniqueItems -= 1;
+        optimisticCart.totalItems = optimisticCart.summary.totalQuantity;
+        optimisticCart.subtotal = optimisticCart.summary.totalAmount;
+        optimisticCart.empty = optimisticCart.items.length === 0;
+
+        // Apply optimistic update
+        setCart(optimisticCart);
+      }
+
+      // Call API in background
+      const updatedCart = await removeCartItemApi(productVariationId);
+
+      // Update with real data from server
+      setCart(updatedCart);
+
+      Toast.show({
+        type: "success",
+        text1: "Đã xóa",
+        text2: "Sản phẩm đã được xóa khỏi giỏ hàng",
+      });
+    } catch (err: any) {
+      console.error("Failed to remove from cart:", err);
+
+      // Revert optimistic update by refreshing from server
+      await refreshCart();
+
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: err.message || "Không thể xóa sản phẩm",
+      });
+    }
+  };
+
+  // Update quantity with optimistic update
+  const updateQuantity = async (
+    productVariationId: number,
+    quantity: number
+  ) => {
+    if (!cart) return;
+
+    try {
+      if (quantity <= 0) {
+        await removeFromCart(productVariationId);
+        return;
+      }
+
+      // Mark item as updating
+      setUpdatingItems((prev) => new Set(prev).add(productVariationId));
+
+      // Optimistic update - update UI immediately
+      const optimisticCart = { ...cart };
+      const itemIndex = optimisticCart.items.findIndex(
+        (item) => item.productVariationId === productVariationId
+      );
+
+      if (itemIndex >= 0) {
+        const item = optimisticCart.items[itemIndex];
+        const oldQuantity = item.quantity;
+        const quantityDiff = quantity - oldQuantity;
+
+        // Update item
+        optimisticCart.items[itemIndex] = {
+          ...item,
+          quantity,
+          totalPrice: item.unitPrice * quantity,
+        };
+
+        // Update summary
+        optimisticCart.summary.totalQuantity += quantityDiff;
+        optimisticCart.summary.totalAmount =
+          optimisticCart.summary.totalAmount -
+          item.totalPrice +
+          item.unitPrice * quantity;
+        optimisticCart.totalItems = optimisticCart.summary.totalQuantity;
+        optimisticCart.subtotal = optimisticCart.summary.totalAmount;
+
+        // Apply optimistic update
+        setCart(optimisticCart);
+      }
+
+      // Call API in background
+      const updatedCart = await updateCartItemApi(productVariationId, quantity);
+
+      // Update with real data from server
+      setCart(updatedCart);
+    } catch (err: any) {
+      console.error("Failed to update quantity:", err);
+
+      // Revert optimistic update by refreshing from server
+      await refreshCart();
+
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: err.message || "Không thể cập nhật số lượng",
+      });
+    } finally {
+      // Remove updating state
+      setUpdatingItems((prev) => {
+        const next = new Set(prev);
+        next.delete(productVariationId);
+        return next;
       });
     }
   };
@@ -221,46 +225,59 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   // Clear cart
   const clearCart = async () => {
     try {
-      setCartItems([]);
-      await saveCartToStorage([]);
+      setIsLoading(true);
+      const updatedCart = await clearCartApi();
+      setCart(updatedCart);
+
       Toast.show({
         type: "success",
-        text1: "Cart Cleared",
-        text2: "All items removed from cart",
+        text1: "Đã xóa giỏ hàng",
+        text2: "Tất cả sản phẩm đã được xóa",
       });
-    } catch (error) {
-      console.error("Failed to clear cart:", error);
+    } catch (err: any) {
+      console.error("Failed to clear cart:", err);
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Failed to clear cart",
+        text1: "Lỗi",
+        text2: err.message || "Không thể xóa giỏ hàng",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Get cart item by product id
-  const getCartItem = (productId: string) => {
-    return cartItems.find((item) => item.productId === productId);
+  // Get cart item by variation ID
+  const getCartItemByVariationId = (productVariationId: number) => {
+    return cartItems.find(
+      (item) => item.productVariationId === productVariationId
+    );
   };
 
-  // Get cart item by cart item id
-  const getCartItemById = (cartItemId: string) => {
-    return cartItems.find((item) => item.id === cartItemId);
+  // Format price helper
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(price);
   };
 
   return (
     <CartContext.Provider
       value={{
+        cart,
         cartItems,
         totalAmount,
         itemCount,
         isLoading,
+        error,
+        updatingItems,
+        refreshCart,
         addToCart,
         removeFromCart,
         updateQuantity,
         clearCart,
-        getCartItem,
-        getCartItemById,
+        getCartItemByVariationId,
+        formatPrice,
       }}
     >
       {children}

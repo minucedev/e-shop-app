@@ -101,8 +101,8 @@ const ProductDetail = () => {
       return;
     }
 
-    // TODO: Update cart to save variationId instead of productId
-    await addToCart(productId, quantity);
+    // Add to cart with variationId
+    await addToCart(selectedVariation.id, quantity);
   };
 
   // Handle quantity change

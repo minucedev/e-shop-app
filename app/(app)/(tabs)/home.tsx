@@ -133,17 +133,17 @@ const Home = () => {
               </Text>
             </View>
 
-            {/* Add to Cart Button */}
+            {/* View Detail Button */}
             <TouchableOpacity
               className="bg-blue-500 p-2 rounded-full"
-              onPress={async (e) => {
+              onPress={(e) => {
                 e.stopPropagation();
-                await addToCart(item.id.toString());
-                router.push("/(app)/(tabs)/cart");
+                router.push({
+                  pathname: "/(app)/(screens)/product-detail",
+                  params: { id: item.id.toString() },
+                });
               }}
-            >
-              <Ionicons name="add" size={16} color="white" />
-            </TouchableOpacity>
+            ></TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
@@ -169,7 +169,7 @@ const Home = () => {
     <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
       {/* Status Bar and Header */}
-      <View className="pt-12 px-4 pb-4 bg-white">
+      <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
         <Text className="text-3xl font-bold text-gray-900 mt-2">
           {(() => {
             const hour = new Date().getHours();
@@ -284,7 +284,7 @@ const Home = () => {
                     <Ionicons
                       name="information-circle"
                       size={20}
-                      color="#2563eb"
+                      color="#3a404cff"
                     />
                     <Text className="text-base font-semibold text-gray-800 ml-2">
                       Description
@@ -427,17 +427,17 @@ const Home = () => {
                         </Text>
                       </View>
 
-                      {/* Add to Cart Button */}
+                      {/* View Detail Button */}
                       <TouchableOpacity
-                        className="bg-blue-500 p-1.5 rounded-full"
-                        onPress={async (e) => {
+                        // className="bg-blue-500 p-1.5 rounded-full"
+                        onPress={(e) => {
                           e.stopPropagation();
-                          await addToCart(item.id.toString());
-                          router.push("/(app)/(tabs)/cart");
+                          router.push({
+                            pathname: "/(app)/(screens)/product-detail",
+                            params: { id: item.id.toString() },
+                          });
                         }}
-                      >
-                        <Ionicons name="add" size={14} color="white" />
-                      </TouchableOpacity>
+                      ></TouchableOpacity>
                     </View>
                   </View>
                 </TouchableOpacity>
