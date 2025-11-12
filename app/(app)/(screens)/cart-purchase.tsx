@@ -77,63 +77,88 @@ const CartPurchase = () => {
     setIsPlacingOrder(true);
 
     try {
+      // Prepare common order data
+      const orderItems: OrderItemPayload[] = parsedCartItems.map(
+        (item: any) => ({
+          productVariationId: item.productVariationId,
+          quantity: item.quantity,
+        })
+      );
+
+      const shippingInfo: ShippingInfo = {
+        shippingName: `${user.firstName} ${user.lastName}`,
+        shippingPhone: user.phone || "N/A",
+        shippingEmail: user.email,
+        shippingAddress: defaultAddress.streetAddress,
+        shippingWard: defaultAddress.ward,
+        shippingDistrict: defaultAddress.district,
+        shippingCity: defaultAddress.city,
+        shippingPostalCode: defaultAddress.postalCode,
+        shippingCountry: "Vietnam",
+        shippingMethod: "STANDARD",
+        deliveryInstructions: "Gọi trước khi giao hàng",
+      };
+
+      const paymentInfo: PaymentInfo = {
+        paymentMethod: selectedPaymentMethod,
+      };
+
+      const payload: CreateOrderPayload = {
+        orderItems,
+        shippingInfo,
+        paymentInfo,
+        note: "Đơn hàng từ ứng dụng mobile",
+        returnUrl: "myapp://callback",
+      };
+
+      // Call create order API
+      const response = await orderApi.createOrder(payload);
+
+      if (!response.success) {
+        Alert.alert("Order Failed", response.error || "An error occurred.");
+        return;
+      }
+
+      // Handle based on payment method
       if (selectedPaymentMethod === "COD") {
-        // NOTE: Using item.productId as productVariationId as the cart context does not support variations yet.
-        const orderItems: OrderItemPayload[] = parsedCartItems.map(
-          (item: any) => ({
-            productVariationId: item.productId,
-            quantity: item.quantity,
-          })
-        );
-
-        const shippingInfo: ShippingInfo = {
-          shippingName: `${user.firstName} ${user.lastName}`,
-          shippingPhone: user.phone || "N/A",
-          shippingEmail: user.email,
-          shippingAddress: defaultAddress.streetAddress,
-          shippingWard: defaultAddress.ward,
-          shippingDistrict: defaultAddress.district,
-          shippingCity: defaultAddress.city,
-          shippingPostalCode: defaultAddress.postalCode,
-          shippingCountry: "Vietnam",
-          shippingMethod: "STANDARD",
-          deliveryInstructions: "Gọi trước khi giao hàng",
-        };
-
-        const paymentInfo: PaymentInfo = {
-          paymentMethod: "COD",
-        };
-
-        const payload: CreateOrderPayload = {
-          orderItems,
-          shippingInfo,
-          paymentInfo,
-          note: "Đơn hàng test",
-          voucherCode: "NEWUSER15",
-          returnUrl: "myapp://callback",
-        };
-
-        const response = await orderApi.createOrder(payload);
-
-        if (response.success) {
-          Alert.alert(
-            "Order Placed!",
-            "Your order has been successfully placed. Let's continue shopping!",
-            [
-              {
-                text: "OK",
-                onPress: () => {
-                  clearCart();
-                  router.replace("/(app)/(tabs)/shop");
-                },
+        // COD - Show success and clear cart
+        Alert.alert(
+          "Đặt hàng thành công!",
+          "Đơn hàng của bạn đã được đặt thành công. Bạn sẽ thanh toán khi nhận hàng.",
+          [
+            {
+              text: "Xem đơn hàng",
+              onPress: () => {
+                clearCart();
+                router.replace("/(app)/(screens)/my-orders");
               },
-            ]
-          );
-        } else {
-          Alert.alert("Order Failed", response.error || "An error occurred.");
-        }
+            },
+            {
+              text: "Tiếp tục mua sắm",
+              onPress: () => {
+                clearCart();
+                router.replace("/(app)/(tabs)/shop");
+              },
+              style: "cancel",
+            },
+          ]
+        );
       } else if (selectedPaymentMethod === "VNPAY") {
-        Alert.alert("Coming Soon", "VNPay payment is not yet implemented.");
+        // VNPay - Navigate to WebView with payment URL
+        if (response.data?.paymentUrl) {
+          router.push({
+            pathname: "/(app)/(screens)/payment-webview",
+            params: {
+              paymentUrl: response.data.paymentUrl,
+              orderCode: response.data.orderCode,
+            },
+          });
+        } else {
+          Alert.alert(
+            "Lỗi",
+            "Không thể lấy link thanh toán. Vui lòng thử lại."
+          );
+        }
       }
     } catch (error: any) {
       Alert.alert("Error", "An unexpected error occurred: " + error.message);
@@ -260,26 +285,46 @@ const CartPurchase = () => {
       <View className="px-5 pb-8 pt-4 bg-white border-t border-gray-100">
         {/* Total calculation */}
         {(() => {
+          // Calculate subtotal from cart items
           const subtotal = parsedCartItems.reduce(
-            (total: number, item: { price: string; quantity: number }) => {
-              const price = parseFloat((item.price || "").replace("$", ""));
-              return total + price * item.quantity;
+            (total: number, item: any) => {
+              return total + (item.totalPrice || 0);
             },
             0
           );
-          const total = subtotal;
+
+          // Fixed shipping fee
+          const shippingFee = 30000;
+
+          // Total = Subtotal + Shipping
+          const total = subtotal + shippingFee;
+
+          // Format VND
+          const formatVND = (amount: number) => {
+            return new Intl.NumberFormat("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            }).format(amount);
+          };
+
           return (
             <View className="mb-4">
               <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-base text-gray-600">Subtotal</Text>
+                <Text className="text-base text-gray-600">Tạm tính</Text>
                 <Text className="text-base font-semibold text-gray-900">
-                  ${subtotal.toFixed(2)}
+                  {formatVND(subtotal)}
                 </Text>
               </View>
               <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-lg font-bold text-black">Total</Text>
+                <Text className="text-base text-gray-600">Phí vận chuyển</Text>
+                <Text className="text-base font-semibold text-gray-900">
+                  {formatVND(shippingFee)}
+                </Text>
+              </View>
+              <View className="flex-row justify-between items-center mb-2 pt-2 border-t border-gray-200">
+                <Text className="text-lg font-bold text-black">Tổng cộng</Text>
                 <Text className="text-lg font-bold text-black">
-                  ${total.toFixed(2)}
+                  {formatVND(total)}
                 </Text>
               </View>
             </View>

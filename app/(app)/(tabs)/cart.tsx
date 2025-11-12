@@ -63,8 +63,7 @@ const Cart = () => {
     router.push({
       pathname: "/(app)/(screens)/cart-purchase",
       params: {
-        cartId: cart?.id.toString(),
-        totalAmount: totalAmount.toString(),
+        cartItems: JSON.stringify(cartItems),
       },
     });
   };
@@ -357,7 +356,7 @@ const Cart = () => {
 
               <View className="flex-row justify-between mb-2">
                 <Text className="text-gray-600">Phí vận chuyển</Text>
-                <Text className="text-green-600 font-semibold">Miễn phí</Text>
+                <Text className="text-gray-900 font-semibold">30,000₫</Text>
               </View>
 
               {cart?.summary.hasUnavailableItems && (
@@ -375,7 +374,7 @@ const Cart = () => {
                     Tổng cộng
                   </Text>
                   <Text className="text-xl font-bold text-blue-600">
-                    {formatPrice(totalAmount)}
+                    {formatPrice(totalAmount + 30000)}
                   </Text>
                 </View>
               </View>
