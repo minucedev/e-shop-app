@@ -109,7 +109,7 @@ const Profile = () => {
         <OptionItem
           iconName="reader-outline"
           title="My Order"
-          onPress={() => console.log("Go to My Order")}
+          onPress={() => router.push("/(app)/(screens)/my-orders")}
         />
         <OptionItem
           iconName="location-outline"

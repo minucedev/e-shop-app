@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { fonts } from "@/constants/fonts";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProductProvider } from "@/contexts/ProductContext";
-import { FavoritesProvider } from "@/contexts/FavoritesContext";
+import { WishlistProvider } from "@/contexts/WishlistContext";
 import { PromotionProvider } from "@/contexts/PromotionContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { ActivityIndicator, View } from "react-native";
@@ -49,7 +49,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ProductProvider>
-        <FavoritesProvider>
+        <WishlistProvider>
           <PromotionProvider>
             <CartProvider>
               <AuthGate>
@@ -74,7 +74,7 @@ export default function RootLayout() {
               </AuthGate>
             </CartProvider>
           </PromotionProvider>
-        </FavoritesProvider>
+        </WishlistProvider>
       </ProductProvider>
       <Toast />
     </AuthProvider>

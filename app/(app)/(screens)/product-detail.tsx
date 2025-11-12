@@ -16,7 +16,7 @@ import {
   ProductDetailResponse,
   ProductVariation,
 } from "@/services/productApi";
-import { useFavorites } from "@/contexts/FavoritesContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useProduct } from "@/contexts/ProductContext";
 
@@ -27,7 +27,7 @@ const ProductDetail = () => {
   const params = useLocalSearchParams();
   const productId = params.id as string;
 
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { formatPrice } = useProduct();
 
@@ -145,7 +145,7 @@ const ProductDetail = () => {
     );
   }
 
-  const isProductFavorite = isFavorite(productId);
+  const isProductFavorite = isInWishlist(parseInt(productId));
   const currentPrice = selectedVariation?.salePrice || product.displaySalePrice;
   const originalPrice =
     selectedVariation?.price || product.displayOriginalPrice;
@@ -168,7 +168,7 @@ const ProductDetail = () => {
           {product.name}
         </Text>
         <TouchableOpacity
-          onPress={() => toggleFavorite(productId)}
+          onPress={() => toggleWishlist(parseInt(productId))}
           className="p-2"
         >
           <Ionicons

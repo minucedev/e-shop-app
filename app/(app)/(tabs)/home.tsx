@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProduct } from "@/contexts/ProductContext";
 import { getActiveCampaigns, ICampaign } from "@/services/campaignApi";
-import { useFavorites } from "@/contexts/FavoritesContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
 
@@ -29,8 +29,8 @@ const Home = () => {
   const [selectedCampaign, setSelectedCampaign] =
     React.useState<ICampaign | null>(null);
 
-  // Get favorites from FavoritesContext
-  const { isFavorite, toggleFavorite } = useFavorites();
+  // Get wishlist from WishlistContext
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   // Get cart from CartContext
   const { addToCart } = useCart();
@@ -45,7 +45,7 @@ const Home = () => {
   }, []);
 
   const renderProductItem = ({ item }: { item: (typeof products)[0] }) => {
-    const isItemFavorite = isFavorite(item.id);
+    const isItemFavorite = isInWishlist(item.id);
 
     // Calculate discount percentage for display
     const discountPercent =
@@ -92,7 +92,7 @@ const Home = () => {
             className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
             onPress={(e) => {
               e.stopPropagation();
-              toggleFavorite(item.id.toString());
+              toggleWishlist(item.id);
             }}
           >
             <Ionicons
@@ -365,7 +365,7 @@ const Home = () => {
           <FlatList
             data={products.slice(6, 9)}
             renderItem={({ item }) => {
-              const isItemFavorite = isFavorite(item.id);
+              const isItemFavorite = isInWishlist(item.id);
               const hasDiscount =
                 item.displayOriginalPrice > item.displaySalePrice;
               return (
@@ -396,7 +396,7 @@ const Home = () => {
                       className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
                       onPress={(e) => {
                         e.stopPropagation();
-                        toggleFavorite(item.id.toString());
+                        toggleWishlist(item.id);
                       }}
                     >
                       <Ionicons

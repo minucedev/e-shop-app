@@ -8,29 +8,33 @@ import {
 } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useProduct, formatPrice } from "@/contexts/ProductContext";
-import { useFavorites } from "@/contexts/FavoritesContext";
+import { formatPrice } from "@/contexts/ProductContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
 
 const Favorites = () => {
   const router = useRouter();
 
-  // Lấy sản phẩm từ ProductContext
-  const { products, getProductById } = useProduct();
+  // product helper (formatPrice imported above)
 
-  // Lấy favorites từ FavoritesContext
-  const { favoriteIds, clearFavorites, removeFromFavorites } = useFavorites();
+  // Lấy wishlist từ WishlistContext (API-backed)
+  const {
+    items: favoriteItemsFromApi,
+    isLoading,
+    loadWishlist,
+    loadMoreWishlist,
+    hasMore,
+    removeFromWishlist,
+  } = useWishlist();
 
   // Lấy cart từ CartContext
   const { addToCart } = useCart();
 
-  // Lấy danh sách sản phẩm yêu thích từ IDs
-  const favoriteItems = favoriteIds
-    .map((id) => getProductById(id))
-    .filter(Boolean); // Loại bỏ undefined
+  // Map API items (already full product objects)
+  const favoriteItems = favoriteItemsFromApi || [];
 
-  // Hàm xóa tất cả sản phẩm yêu thích
+  // Hàm xóa tất cả sản phẩm yêu thích bằng cách gọi API remove cho từng item
   const handleClearFavorites = () => {
     Alert.alert(
       "Clear Favorites",
@@ -40,15 +44,26 @@ const Favorites = () => {
         {
           text: "Clear",
           style: "destructive",
-          onPress: () => clearFavorites(),
+          onPress: async () => {
+            if (favoriteItems.length === 0) return;
+            // Remove sequentially to avoid spamming API too quickly
+            for (const it of favoriteItems) {
+              try {
+                await removeFromWishlist(it.id);
+              } catch (e) {
+                // ignore individual failures and continue
+                console.error("Failed removing", it.id, e);
+              }
+            }
+          },
         },
       ]
     );
   };
 
-  // Hàm xóa một sản phẩm khỏi danh sách yêu thích
-  const handleRemoveFromFavorites = (productId: string) => {
-    const product = getProductById(productId);
+  // Hàm xóa một sản phẩm khỏi danh sách yêu thích (API)
+  const handleRemoveFromFavorites = (productId: number) => {
+    const product = favoriteItems.find((p) => p.id === productId);
     Alert.alert(
       "Remove from Favorites",
       `Are you sure you want to remove "${product?.name}" from your favorites?`,
@@ -57,7 +72,9 @@ const Favorites = () => {
         {
           text: "Remove",
           style: "destructive",
-          onPress: () => removeFromFavorites(productId),
+          onPress: async () => {
+            await removeFromWishlist(productId);
+          },
         },
       ]
     );
@@ -71,6 +88,12 @@ const Favorites = () => {
     });
   };
 
+  // Load wishlist on mount
+  React.useEffect(() => {
+    loadWishlist();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
@@ -82,7 +105,11 @@ const Favorites = () => {
       </View>
 
       {/* Danh sách sản phẩm yêu thích */}
-      {favoriteItems.length === 0 ? (
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-gray-500">Loading...</Text>
+        </View>
+      ) : favoriteItems.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <Ionicons name="heart-outline" size={80} color="#444" />
           <Text className="text-gray-400 text-lg mt-4">No favorite items.</Text>
@@ -125,12 +152,12 @@ const Favorites = () => {
                       />
                     </View>
 
-                    {/* Favorite Icon - always filled */}
+                    {/* Favorite Icon - uses API remove */}
                     <TouchableOpacity
                       className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
                       onPress={(e) => {
                         e.stopPropagation();
-                        handleRemoveFromFavorites(item.id.toString());
+                        handleRemoveFromFavorites(item.id);
                       }}
                     >
                       <Ionicons name="heart" size={25} color="#e74c3c" />

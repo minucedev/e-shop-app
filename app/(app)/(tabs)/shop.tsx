@@ -11,7 +11,7 @@ import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useProduct } from "@/contexts/ProductContext";
-import { useFavorites } from "@/contexts/FavoritesContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
 
@@ -30,8 +30,8 @@ const Shop = () => {
     refreshProducts,
   } = useProduct();
 
-  // Lấy favorites từ FavoritesContext
-  const { isFavorite, toggleFavorite } = useFavorites();
+  // Lấy wishlist từ WishlistContext
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   // Lấy cart từ CartContext
   const { addToCart } = useCart();
@@ -65,8 +65,8 @@ const Shop = () => {
   };
 
   // Xử lý toggle yêu thích
-  const handleToggleFavorite = (id: string) => {
-    toggleFavorite(id);
+  const handleToggleFavorite = (id: number) => {
+    toggleWishlist(id);
   };
 
   // Reset search
@@ -165,7 +165,7 @@ const Shop = () => {
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
           renderItem={({ item }) => {
-            const isItemFavorite = isFavorite(item.id);
+            const isItemFavorite = isInWishlist(item.id);
             const hasDiscount =
               item.displayOriginalPrice > item.displaySalePrice;
             const discountPercent =
@@ -213,7 +213,7 @@ const Shop = () => {
                     className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleToggleFavorite(item.id.toString());
+                      handleToggleFavorite(item.id);
                     }}
                   >
                     <Ionicons

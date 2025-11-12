@@ -11,14 +11,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePromotion, IPromotion } from "@/contexts/PromotionContext";
 import { useProduct } from "@/contexts/ProductContext";
-import { useFavorites } from "@/contexts/FavoritesContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 
 const PromotionDetail = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { getPromotions } = usePromotion();
   const { getProductById, formatPrice } = useProduct();
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [promotion, setPromotion] = useState<IPromotion | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -49,8 +49,8 @@ const PromotionDetail = () => {
   }) => {
     const product = getProductById(item.productId);
     if (!product) return null;
-    const discountedPrice = getDiscountedPrice(product.price);
-    const isItemFavorite = isFavorite(product.id);
+    const discountedPrice = getDiscountedPrice(product.displayOriginalPrice);
+    const isItemFavorite = isInWishlist(product.id);
 
     return (
       <TouchableOpacity
@@ -63,7 +63,9 @@ const PromotionDetail = () => {
         {/* Product Image - 1.5x size */}
         <View className="bg-gray-50 rounded-xl w-32 h-32 items-center justify-center mr-5 overflow-hidden relative">
           <Image
-            source={{ uri: product.image }}
+            source={{
+              uri: product.imageUrl || "https://via.placeholder.com/150",
+            }}
             className="w-full h-full"
             resizeMode="cover"
           />
@@ -72,7 +74,7 @@ const PromotionDetail = () => {
             className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
             onPress={(e) => {
               e.stopPropagation();
-              toggleFavorite(product.id.toString());
+              toggleWishlist(product.id);
             }}
           >
             <Ionicons
@@ -91,15 +93,13 @@ const PromotionDetail = () => {
           >
             {product.name}
           </Text>
-          <Text className="text-sm text-gray-500 mb-3" numberOfLines={2}>
-            {product.description}
-          </Text>
+          {/* Removed description as it's not in Product type */}
 
           {/* Price Section */}
           <View className="flex-row items-center justify-between">
             <View className="flex-col">
               <Text className="text-base font-medium text-gray-400 line-through">
-                {formatPrice(product.price)}
+                {formatPrice(product.displayOriginalPrice)}
               </Text>
               <Text className="text-xl font-bold text-blue-600">
                 {formatPrice(discountedPrice)}

@@ -218,6 +218,14 @@ class ApiClient {
         let errorMessage =
           data.message || `HTTP error! status: ${response.status}`;
 
+        // Log response details for debugging
+        console.log(`❌ API Error Response:`, {
+          status: response.status,
+          statusText: response.statusText,
+          endpoint,
+          data,
+        });
+
         switch (response.status) {
           case 400:
             errorMessage = data.message || "Invalid request data";
@@ -232,7 +240,8 @@ class ApiClient {
             errorMessage = "Resource not found";
             break;
           case 500:
-            errorMessage = "Server error. Please try again later";
+            errorMessage =
+              data.message || "Server error. Please try again later";
             break;
         }
 
