@@ -155,13 +155,16 @@ export const ProductProvider = ({
 
         // Only update state if request wasn't aborted
         if (!activeRequestRef.current?.signal.aborted) {
-          setFilteredProducts(response.content);
-          setFilteredCurrentPage(response.page.number);
-          setFilteredTotalPages(response.page.totalPages);
-          setFilteredTotalElements(response.page.totalElements);
-          setFilteredHasMore(
-            response.page.number < response.page.totalPages - 1
-          );
+          // Use batch update to prevent multiple re-renders
+          React.startTransition(() => {
+            setFilteredProducts(response.content);
+            setFilteredCurrentPage(response.page.number);
+            setFilteredTotalPages(response.page.totalPages);
+            setFilteredTotalElements(response.page.totalElements);
+            setFilteredHasMore(
+              response.page.number < response.page.totalPages - 1
+            );
+          });
         }
       } catch (e: any) {
         // Only update error if request wasn't aborted

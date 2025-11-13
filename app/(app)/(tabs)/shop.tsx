@@ -5,6 +5,7 @@ import {
   TextInput,
   FlatList,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -50,6 +51,10 @@ const Shop = () => {
   const [showFilterModal, setShowFilterModal] = React.useState(false);
   const [isInitialized, setIsInitialized] = React.useState(false);
   const lastFetchedParamsRef = React.useRef<string>("");
+  
+  // Animated value for smooth fade transition
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
+  const [isTransitioning, setIsTransitioning] = React.useState(false);
 
   // Sync searchText with filters.searchQuery when it changes externally (e.g., clear from ActiveFilterTags)
   React.useEffect(() => {
@@ -70,7 +75,7 @@ const Shop = () => {
     }
   }, [searchQuery]);
 
-  // Fetch products when filters change
+  // Fetch products when filters change with smooth transition
   React.useEffect(() => {
     const currentParams = getFilterParams();
     const paramsKey = JSON.stringify(currentParams);
@@ -81,7 +86,26 @@ const Shop = () => {
 
       const fetchId = requestAnimationFrame(() => {
         console.log("[Shop] Fetching with params:", currentParams);
-        fetchProductsWithFilters(currentParams);
+        
+        // Start fade out animation before fetching
+        setIsTransitioning(true);
+        Animated.timing(fadeAnim, {
+          toValue: 0.3,
+          duration: 150,
+          useNativeDriver: true,
+        }).start(() => {
+          // Fetch data after fade out
+          fetchProductsWithFilters(currentParams).then(() => {
+            // Fade in animation after data loaded
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }).start(() => {
+              setIsTransitioning(false);
+            });
+          });
+        });
       });
 
       if (!isInitialized) {
@@ -209,7 +233,7 @@ const Shop = () => {
       {/* Active Filter Tags - no campaign support here anymore */}
       <ActiveFilterTags />
 
-      {/* Product List */}
+      {/* Product List with smooth transition */}
       {isLoading && filteredProducts.length === 0 ? (
         <ProductGridSkeleton count={6} />
       ) : filteredProducts.length === 0 ? (
@@ -223,26 +247,28 @@ const Shop = () => {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredProducts}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          columnWrapperStyle={{
-            justifyContent: "space-between",
-            paddingHorizontal: 16,
-            marginBottom: 16,
-          }}
-          contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={renderFooter}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={50}
-          windowSize={10}
-          initialNumToRender={6}
-          renderItem={renderItem}
-        />
+        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+          <FlatList
+            data={filteredProducts}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={2}
+            columnWrapperStyle={{
+              justifyContent: "space-between",
+              paddingHorizontal: 16,
+              marginBottom: 16,
+            }}
+            contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={renderFooter}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={50}
+            windowSize={10}
+            initialNumToRender={6}
+            renderItem={renderItem}
+          />
+        </Animated.View>
       )}
 
       {/* Filter Bottom Sheet */}
