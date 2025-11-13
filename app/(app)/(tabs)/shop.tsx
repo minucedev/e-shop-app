@@ -18,7 +18,6 @@ import { FilterBottomSheet } from "@/components/FilterBottomSheet";
 import { ActiveFilterTags } from "@/components/ActiveFilterTags";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
-import { useDebounce } from "@/hooks/useDebounce";
 
 const Shop = () => {
   // Lấy search params từ navigation (for search only)
@@ -52,9 +51,6 @@ const Shop = () => {
   const [isInitialized, setIsInitialized] = React.useState(false);
   const lastFetchedParamsRef = React.useRef<string>("");
 
-  // Debounce search text - only update filter after 150ms of no typing
-  const debouncedSearchText = useDebounce(searchText, 150);
-
   // Sync searchText with filters.searchQuery when it changes externally (e.g., clear from ActiveFilterTags)
   React.useEffect(() => {
     if (filters.searchQuery === undefined && searchText !== "") {
@@ -73,14 +69,6 @@ const Shop = () => {
       setSearchText("");
     }
   }, [searchQuery]);
-
-  // Auto-update search query when debounced value changes
-  React.useEffect(() => {
-    if (isInitialized && debouncedSearchText !== filters.searchQuery) {
-      console.log("[Shop] Debounced search:", debouncedSearchText);
-      setSearchQuery(debouncedSearchText || undefined);
-    }
-  }, [debouncedSearchText, isInitialized]);
 
   // Fetch products when filters change
   React.useEffect(() => {
@@ -120,13 +108,11 @@ const Shop = () => {
     setSearchQuery(undefined);
   }, [setSearchQuery]);
 
-  // Handle search submit (optional - debounce already handles it)
+  // Handle search submit - only search when user presses Enter or search button
   const handleSearch = React.useCallback(() => {
-    // Search is already handled by debounce, but keep this for manual submit
-    if (debouncedSearchText !== searchText) {
-      setSearchQuery(searchText || undefined);
-    }
-  }, [searchText, debouncedSearchText, setSearchQuery]);
+    console.log("[Shop] Manual search triggered:", searchText);
+    setSearchQuery(searchText || undefined);
+  }, [searchText, setSearchQuery]);
 
   // Handle filter apply
   const handleApplyFilters = React.useCallback(() => {
