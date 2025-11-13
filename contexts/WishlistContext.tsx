@@ -10,14 +10,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as wishlistApi from "../services/wishlistApi";
 import { useAuth } from "./AuthContext";
 
-// Feature flag - set to false if backend doesn't have wishlist API yet
-const WISHLIST_API_ENABLED = false; // TODO: Set to true when backend implements wishlist API
+// Feature flag - set to true when backend has wishlist API
+const WISHLIST_API_ENABLED = true; // ✅ API is now available
 
 export interface WishlistProduct {
   id: number;
   name: string;
-  imageUrl: string;
-  warrantyMonths: number;
+  imageUrl: string | null;
+  warrantyMonths: number | null;
   displayOriginalPrice: number;
   displaySalePrice: number;
   discountType: "PERCENTAGE" | "FIXED" | null;
@@ -184,9 +184,9 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
         ...prev,
         items: response.content,
         wishlistProductIds: productIds,
-        currentPage: response.pageable.pageNumber,
-        totalPages: response.totalPages,
-        hasMore: !response.last,
+        currentPage: response.page.number,
+        totalPages: response.page.totalPages,
+        hasMore: response.page.number < response.page.totalPages - 1,
         isLoading: false,
       }));
     } catch (error: any) {
@@ -231,9 +231,9 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
         ...prev,
         items: [...prev.items, ...response.content],
         wishlistProductIds: newProductIds,
-        currentPage: response.pageable.pageNumber,
-        totalPages: response.totalPages,
-        hasMore: !response.last,
+        currentPage: response.page.number,
+        totalPages: response.page.totalPages,
+        hasMore: response.page.number < response.page.totalPages - 1,
         isLoadingMore: false,
       }));
     } catch (error: any) {
@@ -312,14 +312,10 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
 
     // Use API if enabled
     try {
-      const newProduct = await wishlistApi.addToWishlist(productId);
+      await wishlistApi.addToWishlist(productId);
 
-      // Update with actual data from API
-      setState((prev) => ({
-        ...prev,
-        items: [newProduct, ...prev.items],
-        wishlistProductIds: new Set([...prev.wishlistProductIds, productId]),
-      }));
+      // After successful add, reload wishlist to get fresh data
+      await loadWishlist();
 
       setOptimisticUpdates((prev) => {
         const updated = new Set(prev);
@@ -491,31 +487,12 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
     await loadWishlist();
   };
 
+  // Check multiple products - simplified since API doesn't support bulk check
+  // This will be accurate after loadWishlist is called
   const checkMultipleProducts = async (productIds: number[]) => {
-    if (!isAuthenticated || productIds.length === 0) {
-      return;
-    }
-
-    try {
-      const statusMap = await wishlistApi.checkWishlistStatus(productIds);
-
-      const wishlistIds = new Set<number>();
-      Object.entries(statusMap).forEach(([productId, isInWishlist]) => {
-        if (isInWishlist) {
-          wishlistIds.add(parseInt(productId));
-        }
-      });
-
-      setState((prev) => ({
-        ...prev,
-        wishlistProductIds: new Set([
-          ...prev.wishlistProductIds,
-          ...wishlistIds,
-        ]),
-      }));
-    } catch (error: any) {
-      console.error("Error checking wishlist status:", error);
-    }
+    // No-op - wishlist status is already available in state after loadWishlist
+    // Products in wishlistProductIds set are in wishlist
+    return;
   };
 
   const contextValue: WishlistContextType = {

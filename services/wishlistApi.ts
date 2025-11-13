@@ -1,10 +1,10 @@
-import { apiClient } from "./apiClient";
+import { apiClient, ApiResponse } from "./apiClient";
 
 export interface WishlistProduct {
   id: number;
   name: string;
-  imageUrl: string;
-  warrantyMonths: number;
+  imageUrl: string | null;
+  warrantyMonths: number | null;
   displayOriginalPrice: number;
   displaySalePrice: number;
   discountType: "PERCENTAGE" | "FIXED" | null;
@@ -13,28 +13,20 @@ export interface WishlistProduct {
   totalRatings: number;
 }
 
-export interface WishlistResponse {
-  content: WishlistProduct[];
-  pageable: {
-    pageNumber: number;
-    pageSize: number;
-  };
+export interface PageInfo {
+  size: number;
+  number: number;
   totalElements: number;
   totalPages: number;
-  last: boolean;
-  first: boolean;
+}
+
+export interface WishlistResponse {
+  content: WishlistProduct[];
+  page: PageInfo;
 }
 
 export interface AddToWishlistRequest {
   productId: number;
-}
-
-export interface CheckWishlistRequest {
-  productIds: number[];
-}
-
-export interface CheckWishlistResponse {
-  [productId: string]: boolean;
 }
 
 /**
@@ -61,8 +53,23 @@ export const getWishlists = async (params?: {
     queryParams.append("sortDirection", params.sortDirection);
   }
 
-  const response = await apiClient.get(`/wishlists?${queryParams.toString()}`);
-  return response.data as WishlistResponse;
+  const response = await apiClient.get<WishlistResponse>(
+    `/wishlists?${queryParams.toString()}`
+  );
+  
+  if (!response.data) {
+    return {
+      content: [],
+      page: {
+        size: params?.size || 20,
+        number: params?.page || 0,
+        totalElements: 0,
+        totalPages: 0,
+      },
+    };
+  }
+  
+  return response.data;
 };
 
 /**
@@ -70,11 +77,10 @@ export const getWishlists = async (params?: {
  */
 export const addToWishlist = async (
   productId: number
-): Promise<WishlistProduct> => {
-  const response = await apiClient.post("/wishlists", {
+): Promise<void> => {
+  await apiClient.post("/wishlists", {
     productId,
   });
-  return response.data as WishlistProduct;
 };
 
 /**
@@ -82,21 +88,4 @@ export const addToWishlist = async (
  */
 export const removeFromWishlist = async (productId: number): Promise<void> => {
   await apiClient.delete(`/wishlists/${productId}`);
-};
-
-/**
- * Kiểm tra nhiều sản phẩm có trong wishlist hay không
- * Dùng để hiển thị heart icons
- */
-export const checkWishlistStatus = async (
-  productIds: number[]
-): Promise<CheckWishlistResponse> => {
-  if (productIds.length === 0) {
-    return {};
-  }
-
-  const response = await apiClient.post("/wishlists/check", {
-    productIds,
-  });
-  return response.data as CheckWishlistResponse;
 };
