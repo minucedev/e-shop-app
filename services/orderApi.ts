@@ -76,6 +76,22 @@ export interface Order {
 }
 
 // =================================================================
+// PAGINATION TYPES
+// =================================================================
+
+export interface PageInfo {
+  size: number;
+  number: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface OrderHistoryResponse {
+  content: Order[];
+  page: PageInfo;
+}
+
+// =================================================================
 // API FUNCTION
 // =================================================================
 
@@ -85,6 +101,16 @@ const createOrder = (
   return apiClient.post<Order>("/orders", payload);
 };
 
+const getOrderHistory = (
+  page: number = 0,
+  size: number = 10
+): Promise<ApiResponse<OrderHistoryResponse>> => {
+  return apiClient.get<OrderHistoryResponse>(
+    `/orders?page=${page}&size=${size}`
+  );
+};
+
 export const orderApi = {
   createOrder,
+  getOrderHistory,
 };
