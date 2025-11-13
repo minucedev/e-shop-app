@@ -26,8 +26,6 @@ const Home = () => {
   // Campaign banners state
   const [campaigns, setCampaigns] = React.useState<ICampaign[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = React.useState(true);
-  const [selectedCampaign, setSelectedCampaign] =
-    React.useState<ICampaign | null>(null);
 
   // Get wishlist from WishlistContext
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -224,7 +222,16 @@ const Home = () => {
                 <TouchableOpacity
                   className="mr-3 w-52"
                   activeOpacity={0.85}
-                  onPress={() => setSelectedCampaign(item)}
+                  onPress={() => {
+                    // Navigate to dedicated promotion products screen
+                    router.push({
+                      pathname: "/(app)/(screens)/promotion-products",
+                      params: {
+                        campaignId: item.id.toString(),
+                        campaignName: item.name,
+                      },
+                    });
+                  }}
                 >
                   <View className="bg-blue-100 rounded-xl p-4 relative overflow-hidden shadow-md">
                     {/* Banner Image */}
@@ -233,127 +240,17 @@ const Home = () => {
                       className="w-full h-32 rounded-xl mb-2"
                       resizeMode="cover"
                     />
+                    {/* Campaign Name Badge */}
+                    <View className="bg-white/90 px-3 py-1.5 rounded-lg">
+                      <Text className="text-sm font-bold text-blue-800 text-center">
+                        {item.name}
+                      </Text>
+                    </View>
                   </View>
                 </TouchableOpacity>
               )}
               contentContainerStyle={{ paddingRight: 16 }}
             />
-          )}
-          {/* Campaign Popup Modal */}
-          {selectedCampaign && (
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0,0,0,0.6)",
-                justifyContent: "center",
-                alignItems: "center",
-                zIndex: 99,
-              }}
-            >
-              <View className="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-2xl">
-                {/* Close button */}
-                <TouchableOpacity
-                  className="absolute top-4 right-4 bg-gray-200 rounded-full p-2 z-10"
-                  onPress={() => setSelectedCampaign(null)}
-                >
-                  <Ionicons name="close" size={24} color="#666" />
-                </TouchableOpacity>
-
-                {/* Campaign Image */}
-                {/* <Image
-                  source={{ uri: selectedCampaign.image }}
-                  className="w-full h-48 rounded-xl mb-4"
-                  resizeMode="cover"
-                /> */}
-
-                {/* Campaign Name */}
-                <Text className="text-2xl font-bold text-blue-800 mb-3 text-center">
-                  {selectedCampaign.name}
-                </Text>
-
-                {/* Divider */}
-                <View className="w-full h-px bg-gray-200 mb-4" />
-
-                {/* Description Section */}
-                <View className="mb-4">
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons
-                      name="information-circle"
-                      size={20}
-                      color="#3a404cff"
-                    />
-                    <Text className="text-base font-semibold text-gray-800 ml-2">
-                      Description
-                    </Text>
-                  </View>
-                  <Text className="text-base text-gray-700 leading-6">
-                    {selectedCampaign.description}
-                  </Text>
-                </View>
-
-                {/* Date Section */}
-                <View className="bg-blue-50 rounded-xl p-4 mb-4">
-                  <View className="flex-row items-center justify-between mb-2">
-                    <View className="flex-row items-center flex-1">
-                      <Ionicons
-                        name="calendar-outline"
-                        size={18}
-                        color="#2563eb"
-                      />
-                      <Text className="text-sm font-semibold text-gray-700 ml-2">
-                        Start Date
-                      </Text>
-                    </View>
-                    <Text className="text-sm font-bold text-blue-800">
-                      {new Date(selectedCampaign.startDate).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "2-digit",
-                          year: "numeric",
-                        }
-                      )}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <Ionicons
-                        name="calendar-outline"
-                        size={18}
-                        color="#dc2626"
-                      />
-                      <Text className="text-sm font-semibold text-gray-700 ml-2">
-                        End Date
-                      </Text>
-                    </View>
-                    <Text className="text-sm font-bold text-red-600">
-                      {new Date(selectedCampaign.endDate).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "2-digit",
-                          year: "numeric",
-                        }
-                      )}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Close Button */}
-                <TouchableOpacity
-                  className="bg-blue-600 py-3 rounded-full"
-                  onPress={() => setSelectedCampaign(null)}
-                >
-                  <Text className="text-white font-bold text-center text-base">
-                    Close
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           )}
         </View>
 

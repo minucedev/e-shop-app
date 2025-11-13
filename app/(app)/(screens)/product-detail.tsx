@@ -160,23 +160,25 @@ const ProductDetail = () => {
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pt-12 pb-4 bg-white border-b border-gray-200">
-        <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <Ionicons name="arrow-back" size={24} color="#222" />
-        </TouchableOpacity>
-        <Text className="text-lg font-semibold flex-1 mx-4" numberOfLines={1}>
-          {product.name}
-        </Text>
-        <TouchableOpacity
-          onPress={() => toggleWishlist(parseInt(productId))}
-          className="p-2"
-        >
-          <Ionicons
-            name={isProductFavorite ? "heart" : "heart-outline"}
-            size={24}
-            color={isProductFavorite ? "#ef4444" : "#222"}
-          />
-        </TouchableOpacity>
+      <View className="bg-white border-b border-gray-200">
+        <View className="flex-row items-center justify-between px-4 py-3">
+          <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+            <Ionicons name="arrow-back" size={24} color="#222" />
+          </TouchableOpacity>
+          <Text className="text-lg font-semibold flex-1 mx-2" numberOfLines={1}>
+            {product.name}
+          </Text>
+          <TouchableOpacity
+            onPress={() => toggleWishlist(parseInt(productId))}
+            className="p-2 -mr-2"
+          >
+            <Ionicons
+              name={isProductFavorite ? "heart" : "heart-outline"}
+              size={24}
+              color={isProductFavorite ? "#ef4444" : "#222"}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>

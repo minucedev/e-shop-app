@@ -11,6 +11,8 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -370,12 +372,20 @@ const EditAddress = () => {
           resetForm();
         }}
       >
-        <View className="flex-1 justify-end bg-black/50">
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{ maxHeight: "90%" }}
-          >
-            <View className="bg-white rounded-t-3xl">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
+          keyboardVerticalOffset={0}
+        >
+          <View className="flex-1 justify-end bg-black/50">
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View className="absolute inset-0" />
+            </TouchableWithoutFeedback>
+
+            <View
+              className="bg-white rounded-t-3xl"
+              style={{ maxHeight: "90%" }}
+            >
               {/* Modal Header */}
               <View className="flex-row items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
                 <Text className="text-xl font-bold text-gray-900">
@@ -394,11 +404,12 @@ const EditAddress = () => {
 
               <ScrollView
                 showsVerticalScrollIndicator={true}
+                keyboardShouldPersistTaps="handled"
+                bounces={false}
                 contentContainerStyle={{
                   paddingHorizontal: 20,
                   paddingVertical: 20,
                 }}
-                keyboardShouldPersistTaps="handled"
               >
                 {/* Street Address */}
                 <View className="mb-4">
@@ -517,7 +528,7 @@ const EditAddress = () => {
               </ScrollView>
 
               {/* Action Buttons */}
-              <View className="px-5 py-4 border-t border-gray-100">
+              <View className="px-5 py-4 border-t border-gray-100 bg-white">
                 {modalMode === "edit" && editingAddress && (
                   <TouchableOpacity
                     onPress={() => {
@@ -569,8 +580,8 @@ const EditAddress = () => {
                 </View>
               </View>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
