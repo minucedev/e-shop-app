@@ -16,3 +16,9 @@ export const getActiveCampaigns = async (): Promise<ICampaign[]> => {
   if (res.success && res.data) return res.data;
   throw new Error(res.error || "Failed to fetch campaigns");
 };
+
+export const getCampaignById = async (id: number): Promise<ICampaign> => {
+  const res = await apiClient.get<ICampaign>(`/campaigns/${id}`);
+  if (res.success && res.data) return res.data;
+  throw new Error(res.error || "Failed to fetch campaign");
+};

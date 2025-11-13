@@ -4,85 +4,165 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  Image,
   ActivityIndicator,
 } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useProduct } from "@/contexts/ProductContext";
+import { useFilter } from "@/contexts/FilterContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
+import { FilterBottomSheet } from "@/components/FilterBottomSheet";
+import { ActiveFilterTags } from "@/components/ActiveFilterTags";
+import { ProductCard } from "@/components/ProductCard";
+import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const Shop = () => {
-  // Lấy search params từ navigation
-  const { searchQuery } = useLocalSearchParams();
+  // Lấy search params từ navigation (for search only)
+  const params = useLocalSearchParams();
+  const { searchQuery } = params;
 
   // Lấy sản phẩm từ ProductContext
   const {
-    products,
+    filteredProducts,
     isLoading,
     formatPrice,
-    searchProducts,
-    loadMoreProducts,
-    hasMore,
-    refreshProducts,
+    fetchProductsWithFilters,
+    loadMoreWithFilters,
+    filteredHasMore,
   } = useProduct();
+
+  // Lấy filter từ FilterContext
+  const { filters, setSearchQuery, getFilterParams, hasActiveFilters } =
+    useFilter();
 
   // Lấy wishlist từ WishlistContext
   const { isInWishlist, toggleWishlist } = useWishlist();
 
-  // Lấy cart từ CartContext
+  // Lấy cart từ CartContext (not used but keeping for consistency)
   const { addToCart } = useCart();
   const router = useRouter();
 
   // States
   const [searchText, setSearchText] = React.useState("");
-  const [filteredProducts, setFilteredProducts] = React.useState(products);
+  const [showFilterModal, setShowFilterModal] = React.useState(false);
+  const [isInitialized, setIsInitialized] = React.useState(false);
+  const lastFetchedParamsRef = React.useRef<string>("");
 
-  // Xử lý search query từ navigation params
+  // Debounce search text - only update filter after 150ms of no typing
+  const debouncedSearchText = useDebounce(searchText, 150);
+
+  // Sync searchText with filters.searchQuery when it changes externally (e.g., clear from ActiveFilterTags)
   React.useEffect(() => {
+    if (filters.searchQuery === undefined && searchText !== "") {
+      setSearchText("");
+    }
+  }, [filters.searchQuery]);
+
+  // Initialize search query from navigation params
+  React.useLayoutEffect(() => {
     if (searchQuery && typeof searchQuery === "string") {
-      console.log("Received searchQuery:", searchQuery);
+      console.log("[Shop] Setting searchQuery:", searchQuery);
       setSearchText(searchQuery);
+      setSearchQuery(searchQuery);
+    } else if (!searchQuery) {
+      setSearchQuery(undefined);
+      setSearchText("");
     }
   }, [searchQuery]);
 
-  // Cập nhật danh sách sản phẩm khi products thay đổi hoặc search text thay đổi
+  // Auto-update search query when debounced value changes
   React.useEffect(() => {
-    if (searchText.trim()) {
-      const filtered = searchProducts(searchText);
-      setFilteredProducts(filtered);
-    } else {
-      setFilteredProducts(products);
+    if (isInitialized && debouncedSearchText !== filters.searchQuery) {
+      console.log("[Shop] Debounced search:", debouncedSearchText);
+      setSearchQuery(debouncedSearchText || undefined);
     }
-  }, [products, searchText]);
+  }, [debouncedSearchText, isInitialized]);
 
-  // Xử lý tìm kiếm
-  const handleSearch = (text: string) => {
-    setSearchText(text);
-  };
+  // Fetch products when filters change
+  React.useEffect(() => {
+    const currentParams = getFilterParams();
+    const paramsKey = JSON.stringify(currentParams);
+
+    // Only fetch if params actually changed
+    if (paramsKey !== lastFetchedParamsRef.current) {
+      lastFetchedParamsRef.current = paramsKey;
+
+      const fetchId = requestAnimationFrame(() => {
+        console.log("[Shop] Fetching with params:", currentParams);
+        fetchProductsWithFilters(currentParams);
+      });
+
+      if (!isInitialized) {
+        setIsInitialized(true);
+      }
+
+      return () => cancelAnimationFrame(fetchId);
+    } else if (!isInitialized) {
+      setIsInitialized(true);
+    }
+  }, [filters]);
 
   // Xử lý toggle yêu thích
-  const handleToggleFavorite = (id: number) => {
-    toggleWishlist(id);
-  };
+  const handleToggleFavorite = React.useCallback(
+    (id: number) => {
+      toggleWishlist(id);
+    },
+    [toggleWishlist]
+  );
 
   // Reset search
-  const resetSearch = () => {
+  const resetSearch = React.useCallback(() => {
     setSearchText("");
-  };
+    setSearchQuery(undefined);
+  }, [setSearchQuery]);
+
+  // Handle search submit (optional - debounce already handles it)
+  const handleSearch = React.useCallback(() => {
+    // Search is already handled by debounce, but keep this for manual submit
+    if (debouncedSearchText !== searchText) {
+      setSearchQuery(searchText || undefined);
+    }
+  }, [searchText, debouncedSearchText, setSearchQuery]);
+
+  // Handle filter apply
+  const handleApplyFilters = React.useCallback(() => {
+    const params = getFilterParams();
+    fetchProductsWithFilters(params);
+  }, [getFilterParams, fetchProductsWithFilters]);
+
+  // Load more products
+  const handleLoadMore = React.useCallback(() => {
+    if (!filteredHasMore) return;
+    const params = getFilterParams();
+    loadMoreWithFilters(params);
+  }, [filteredHasMore, getFilterParams, loadMoreWithFilters]);
 
   // Render footer cho FlatList (loading more indicator)
-  const renderFooter = () => {
-    if (!hasMore) return null;
+  const renderFooter = React.useCallback(() => {
+    if (!filteredHasMore) return null;
     return (
       <View className="py-4">
         <ActivityIndicator size="small" color="#3b82f6" />
       </View>
     );
-  };
+  }, [filteredHasMore]);
+
+  // Memoize renderItem for better performance
+  const renderItem = React.useCallback(
+    ({ item }: { item: any }) => (
+      <ProductCard
+        product={item}
+        isInWishlist={isInWishlist(item.id)}
+        onToggleWishlist={toggleWishlist}
+        formatPrice={formatPrice}
+      />
+    ),
+    [isInWishlist, toggleWishlist, formatPrice]
+  );
 
   return (
     <View className="flex-1 bg-white">
@@ -90,16 +170,21 @@ const Shop = () => {
       <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
         <View className="flex-row items-center justify-between">
           <Text className="text-gray-900 text-2xl font-bold">Shop</Text>
-          <Text className="text-gray-500 text-sm">
-            {filteredProducts.length} products
-          </Text>
+          <View className="flex-row items-center gap-2">
+            <Text className="text-gray-500 text-sm">
+              {filteredProducts.length} products
+            </Text>
+            {hasActiveFilters() && (
+              <View className="bg-white-600 rounded-full px-2 py-0.5"></View>
+            )}
+          </View>
         </View>
 
-        {/* Thanh tìm kiếm */}
-        <View className="flex-row items-center mt-4 space-x-3">
+        {/* Thanh tìm kiếm và filter button */}
+        <View className="flex-row items-center mt-4 gap-3">
           <View className="flex-1">
             <View className="flex-row items-center bg-gray-100 rounded-full px-4 h-12">
-              <TouchableOpacity onPress={() => handleSearch(searchText)}>
+              <TouchableOpacity onPress={handleSearch}>
                 <Ionicons
                   name="search"
                   size={24}
@@ -113,11 +198,8 @@ const Shop = () => {
                 placeholderTextColor="#888"
                 style={{ borderWidth: 0, backgroundColor: "transparent" }}
                 value={searchText}
-                onChangeText={(text) => {
-                  setSearchText(text);
-                  handleSearch(text);
-                }}
-                onSubmitEditing={(e) => handleSearch(e.nativeEvent.text)}
+                onChangeText={setSearchText}
+                onSubmitEditing={handleSearch}
                 returnKeyType="search"
               />
               {searchText.length > 0 && (
@@ -127,15 +209,23 @@ const Shop = () => {
               )}
             </View>
           </View>
+
+          {/* Filter Button */}
+          <TouchableOpacity
+            className="bg-blue-600 p-3 rounded-full"
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Ionicons name="options-outline" size={24} color="#fff" />
+          </TouchableOpacity>
         </View>
       </View>
 
+      {/* Active Filter Tags - no campaign support here anymore */}
+      <ActiveFilterTags />
+
       {/* Product List */}
       {isLoading && filteredProducts.length === 0 ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text className="text-gray-500 mt-4">Loading products...</Text>
-        </View>
+        <ProductGridSkeleton count={6} />
       ) : filteredProducts.length === 0 ? (
         <View className="flex-1 justify-center items-center px-6">
           <Ionicons name="search-outline" size={64} color="#ccc" />
@@ -143,7 +233,7 @@ const Shop = () => {
             No products found
           </Text>
           <Text className="text-gray-400 text-sm mt-2 text-center">
-            Try adjusting your search
+            Try adjusting your filters
           </Text>
         </View>
       ) : (
@@ -157,124 +247,24 @@ const Shop = () => {
             marginBottom: 16,
           }}
           contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
-          onEndReached={() => {
-            if (!searchText.trim()) {
-              loadMoreProducts();
-            }
-          }}
+          onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
-          renderItem={({ item }) => {
-            const isItemFavorite = isInWishlist(item.id);
-            const hasDiscount =
-              item.displayOriginalPrice > item.displaySalePrice;
-            const discountPercent =
-              item.discountType === "PERCENTAGE"
-                ? item.discountValue
-                : item.discountValue
-                  ? Math.round(
-                      ((item.displayOriginalPrice - item.displaySalePrice) /
-                        item.displayOriginalPrice) *
-                        100
-                    )
-                  : 0;
-
-            return (
-              <TouchableOpacity
-                className="bg-white rounded-xl shadow-lg border border-gray-100 w-[48%]"
-                activeOpacity={0.8}
-                onPress={() =>
-                  router.push(`/(app)/(screens)/product-detail?id=${item.id}`)
-                }
-              >
-                {/* Product Image */}
-                <View className="relative">
-                  <View className="bg-gray-50 h-40 rounded-t-xl items-center justify-center overflow-hidden">
-                    <Image
-                      source={{
-                        uri: item.imageUrl || "https://via.placeholder.com/150",
-                      }}
-                      className="w-full h-full"
-                      resizeMode="cover"
-                    />
-                  </View>
-
-                  {/* Discount Badge */}
-                  {hasDiscount && (
-                    <View className="absolute top-2 left-2 bg-red-500 rounded-full px-2 py-1">
-                      <Text className="text-white text-xs font-bold">
-                        -{discountPercent}%
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Favorite Icon */}
-                  <TouchableOpacity
-                    className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleToggleFavorite(item.id);
-                    }}
-                  >
-                    <Ionicons
-                      name={isItemFavorite ? "heart" : "heart-outline"}
-                      size={20}
-                      color={isItemFavorite ? "#e74c3c" : "#666"}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Product Info */}
-                <View className="p-3">
-                  <Text
-                    className="text-sm font-bold text-gray-900 mb-1"
-                    numberOfLines={2}
-                  >
-                    {item.name}
-                  </Text>
-
-                  {/* Rating */}
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="star" size={12} color="#FFA500" />
-                    <Text className="text-xs text-gray-600 ml-1">
-                      {item.averageRating.toFixed(1)} ({item.totalRatings})
-                    </Text>
-                  </View>
-
-                  {/* Price and Cart */}
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-1">
-                      {hasDiscount && (
-                        <Text className="text-xs text-gray-400 line-through">
-                          {formatPrice(item.displayOriginalPrice)}
-                        </Text>
-                      )}
-                      <Text
-                        className="text-base font-bold text-blue-600"
-                        numberOfLines={1}
-                      >
-                        {formatPrice(item.displaySalePrice)}
-                      </Text>
-                    </View>
-
-                    {/* View Detail Button */}
-                    <TouchableOpacity
-                      // className="bg-blue-500 p-2 rounded-full"
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        router.push({
-                          pathname: "/(app)/(screens)/product-detail",
-                          params: { id: item.id.toString() },
-                        });
-                      }}
-                    ></TouchableOpacity>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          windowSize={10}
+          initialNumToRender={6}
+          renderItem={renderItem}
         />
       )}
+
+      {/* Filter Bottom Sheet */}
+      <FilterBottomSheet
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApply={handleApplyFilters}
+      />
     </View>
   );
 };

@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { getProducts, ProductApiResponse } from "@/services/productApi";
+import {
+  getProducts,
+  ProductApiResponse,
+  GetProductsParams,
+} from "@/services/productApi";
 
 // Định nghĩa kiểu sản phẩm dựa trên API response
 export type Product = {
@@ -21,11 +25,14 @@ export type ProductDisplay = Product & {
 };
 
 type ProductContextType = {
-  products: Product[];
+  products: Product[]; // All products (unfiltered) - for Home
+  filteredProducts: Product[]; // Filtered products - for Shop
   isLoading: boolean;
   error?: string;
   refreshProducts: () => Promise<void>;
   loadMoreProducts: () => Promise<void>;
+  fetchProductsWithFilters: (params: GetProductsParams) => Promise<void>;
+  loadMoreWithFilters: (params: GetProductsParams) => Promise<void>;
   getProductById: (id: number | string) => Product | undefined;
   searchProducts: (query: string) => Product[];
   formatPrice: (price: number) => string;
@@ -34,6 +41,11 @@ type ProductContextType = {
   currentPage: number;
   totalPages: number;
   totalElements: number;
+  // Filtered products pagination
+  filteredHasMore: boolean;
+  filteredCurrentPage: number;
+  filteredTotalPages: number;
+  filteredTotalElements: number;
 };
 
 // Filter types
@@ -56,6 +68,7 @@ export const ProductProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
+  // All products state (unfiltered - for Home)
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -64,6 +77,16 @@ export const ProductProvider = ({
   const [totalElements, setTotalElements] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Filtered products state (for Shop with filters)
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [filteredCurrentPage, setFilteredCurrentPage] = useState(0);
+  const [filteredTotalPages, setFilteredTotalPages] = useState(0);
+  const [filteredTotalElements, setFilteredTotalElements] = useState(0);
+  const [filteredHasMore, setFilteredHasMore] = useState(true);
+
+  // Track ongoing requests to prevent duplicates
+  const activeRequestRef = React.useRef<AbortController | null>(null);
 
   // Hàm lấy sản phẩm trang đầu tiên
   const refreshProducts = async () => {
@@ -77,9 +100,17 @@ export const ProductProvider = ({
       setTotalPages(response.page.totalPages);
       setTotalElements(response.page.totalElements);
       setHasMore(response.page.number < response.page.totalPages - 1);
+
+      // Initially, filteredProducts = products (no filter)
+      setFilteredProducts(response.content);
+      setFilteredCurrentPage(response.page.number);
+      setFilteredTotalPages(response.page.totalPages);
+      setFilteredTotalElements(response.page.totalElements);
+      setFilteredHasMore(response.page.number < response.page.totalPages - 1);
     } catch (e: any) {
       setError(e?.message || "Failed to load products");
       setProducts([]);
+      setFilteredProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +136,77 @@ export const ProductProvider = ({
       setIsLoadingMore(false);
     }
   };
+
+  // Hàm fetch sản phẩm với filters (trang đầu tiên)
+  const fetchProductsWithFilters = React.useCallback(
+    async (params: GetProductsParams) => {
+      // Cancel any ongoing request
+      if (activeRequestRef.current) {
+        activeRequestRef.current.abort();
+      }
+
+      // Create new abort controller for this request
+      activeRequestRef.current = new AbortController();
+
+      setIsLoading(true);
+      setError(undefined);
+      try {
+        const response = await getProducts({ ...params, page: 0, size: 20 });
+
+        // Only update state if request wasn't aborted
+        if (!activeRequestRef.current?.signal.aborted) {
+          setFilteredProducts(response.content);
+          setFilteredCurrentPage(response.page.number);
+          setFilteredTotalPages(response.page.totalPages);
+          setFilteredTotalElements(response.page.totalElements);
+          setFilteredHasMore(
+            response.page.number < response.page.totalPages - 1
+          );
+        }
+      } catch (e: any) {
+        // Only update error if request wasn't aborted
+        if (!activeRequestRef.current?.signal.aborted) {
+          setError(e?.message || "Failed to load products");
+          setFilteredProducts([]);
+        }
+      } finally {
+        // Only clear loading if request wasn't aborted
+        if (!activeRequestRef.current?.signal.aborted) {
+          setIsLoading(false);
+          activeRequestRef.current = null;
+        }
+      }
+    },
+    []
+  );
+
+  // Hàm tải thêm sản phẩm với filters (infinite scroll)
+  const loadMoreWithFilters = React.useCallback(
+    async (params: GetProductsParams) => {
+      if (!filteredHasMore || isLoadingMore) return;
+
+      setIsLoadingMore(true);
+      try {
+        const nextPage = filteredCurrentPage + 1;
+        const response = await getProducts({
+          ...params,
+          page: nextPage,
+          size: 20,
+        });
+
+        setFilteredProducts((prev) => [...prev, ...response.content]);
+        setFilteredCurrentPage(response.page.number);
+        setFilteredTotalPages(response.page.totalPages);
+        setFilteredTotalElements(response.page.totalElements);
+        setFilteredHasMore(response.page.number < response.page.totalPages - 1);
+      } catch (e: any) {
+        setError(e?.message || "Failed to load more products");
+      } finally {
+        setIsLoadingMore(false);
+      }
+    },
+    [filteredHasMore, isLoadingMore, filteredCurrentPage]
+  );
 
   useEffect(() => {
     refreshProducts();
@@ -134,10 +236,13 @@ export const ProductProvider = ({
     <ProductContext.Provider
       value={{
         products,
+        filteredProducts,
         isLoading,
         error,
         refreshProducts,
         loadMoreProducts,
+        fetchProductsWithFilters,
+        loadMoreWithFilters,
         getProductById,
         searchProducts,
         formatPrice,
@@ -145,6 +250,10 @@ export const ProductProvider = ({
         currentPage,
         totalPages,
         totalElements,
+        filteredHasMore,
+        filteredCurrentPage,
+        filteredTotalPages,
+        filteredTotalElements,
       }}
     >
       {children}
