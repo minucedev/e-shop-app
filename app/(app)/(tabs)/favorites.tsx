@@ -12,6 +12,7 @@ import { formatPrice } from "@/contexts/ProductContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 const Favorites = () => {
   const router = useRouter();
@@ -26,6 +27,7 @@ const Favorites = () => {
     loadMoreWishlist,
     hasMore,
     removeFromWishlist,
+    needsRefresh,
   } = useWishlist();
 
   // Lấy cart từ CartContext
@@ -93,6 +95,15 @@ const Favorites = () => {
     loadWishlist();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reload when tab is focused AND needsRefresh flag is set
+  useFocusEffect(
+    React.useCallback(() => {
+      if (needsRefresh) {
+        loadWishlist(true); // Silent reload
+      }
+    }, [loadWishlist, needsRefresh])
+  );
 
   return (
     <View className="flex-1 bg-white">

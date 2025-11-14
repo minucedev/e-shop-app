@@ -28,7 +28,7 @@ const Home = () => {
   const [loadingCampaigns, setLoadingCampaigns] = React.useState(true);
 
   // Get wishlist from WishlistContext
-  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { isInWishlist, toggleWishlist, checkMultipleProducts } = useWishlist();
 
   // Get cart from CartContext
   const { addToCart } = useCart();
@@ -41,6 +41,14 @@ const Home = () => {
       .catch(() => setCampaigns([]))
       .finally(() => setLoadingCampaigns(false));
   }, []);
+
+  // Check wishlist status when products are loaded
+  React.useEffect(() => {
+    if (products.length > 0) {
+      const productIds = products.map((p) => p.id);
+      checkMultipleProducts(productIds);
+    }
+  }, [products]);
 
   const renderProductItem = ({ item }: { item: (typeof products)[0] }) => {
     const isItemFavorite = isInWishlist(item.id);

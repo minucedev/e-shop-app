@@ -40,7 +40,7 @@ const Shop = () => {
     useFilter();
 
   // Lấy wishlist từ WishlistContext
-  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { isInWishlist, toggleWishlist, checkMultipleProducts } = useWishlist();
 
   // Lấy cart từ CartContext (not used but keeping for consistency)
   const { addToCart } = useCart();
@@ -51,7 +51,7 @@ const Shop = () => {
   const [showFilterModal, setShowFilterModal] = React.useState(false);
   const [isInitialized, setIsInitialized] = React.useState(false);
   const lastFetchedParamsRef = React.useRef<string>("");
-  
+
   // Animated value for smooth fade transition
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const [isTransitioning, setIsTransitioning] = React.useState(false);
@@ -86,7 +86,7 @@ const Shop = () => {
 
       const fetchId = requestAnimationFrame(() => {
         console.log("[Shop] Fetching with params:", currentParams);
-        
+
         // Start fade out animation before fetching
         setIsTransitioning(true);
         Animated.timing(fadeAnim, {
@@ -117,6 +117,14 @@ const Shop = () => {
       setIsInitialized(true);
     }
   }, [filters]);
+
+  // Check wishlist status when products change
+  React.useEffect(() => {
+    if (filteredProducts.length > 0) {
+      const productIds = filteredProducts.map((p) => p.id);
+      checkMultipleProducts(productIds);
+    }
+  }, [filteredProducts]);
 
   // Xử lý toggle yêu thích
   const handleToggleFavorite = React.useCallback(

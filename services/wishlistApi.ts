@@ -56,7 +56,7 @@ export const getWishlists = async (params?: {
   const response = await apiClient.get<WishlistResponse>(
     `/wishlists?${queryParams.toString()}`
   );
-  
+
   if (!response.data) {
     return {
       content: [],
@@ -68,16 +68,14 @@ export const getWishlists = async (params?: {
       },
     };
   }
-  
+
   return response.data;
 };
 
 /**
  * Thêm sản phẩm vào wishlist
  */
-export const addToWishlist = async (
-  productId: number
-): Promise<void> => {
+export const addToWishlist = async (productId: number): Promise<void> => {
   await apiClient.post("/wishlists", {
     productId,
   });
@@ -88,4 +86,35 @@ export const addToWishlist = async (
  */
 export const removeFromWishlist = async (productId: number): Promise<void> => {
   await apiClient.delete(`/wishlists/${productId}`);
+};
+
+/**
+ * Kiểm tra nhiều sản phẩm có trong wishlist hay không
+ * @param productIds - Danh sách ID sản phẩm cần kiểm tra
+ * @returns Object với key là productId, value là true/false
+ * @example
+ * ```
+ * const result = await checkWishlistItems([1, 2, 3]);
+ * // result: { "1": true, "2": false, "3": true }
+ * ```
+ */
+export const checkWishlistItems = async (
+  productIds: number[]
+): Promise<Record<number, boolean>> => {
+  const response = await apiClient.post<Record<string, boolean>>(
+    "/wishlists/check",
+    {
+      productIds,
+    }
+  );
+
+  // Convert string keys to number keys
+  const result: Record<number, boolean> = {};
+  if (response.data) {
+    Object.entries(response.data).forEach(([key, value]) => {
+      result[parseInt(key)] = value;
+    });
+  }
+
+  return result;
 };

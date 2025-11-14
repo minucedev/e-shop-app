@@ -34,11 +34,12 @@ export interface WishlistState {
   currentPage: number;
   totalPages: number;
   hasMore: boolean;
+  needsRefresh: boolean; // Flag to indicate favorites tab needs refresh
 }
 
 interface WishlistContextType extends WishlistState {
   // Core functions
-  loadWishlist: () => Promise<void>;
+  loadWishlist: (silent?: boolean) => Promise<void>;
   loadMoreWishlist: () => Promise<void>;
   addToWishlist: (productId: number) => Promise<void>;
   removeFromWishlist: (productId: number) => Promise<void>;
@@ -81,12 +82,22 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
     currentPage: 0,
     totalPages: 0,
     hasMore: false,
+    needsRefresh: false,
   });
 
   // Optimistic updates tracking
   const [optimisticUpdates, setOptimisticUpdates] = useState<Set<number>>(
     new Set()
   );
+
+  // Track which products we've already checked to avoid redundant API calls
+  const checkedProductsRef = React.useRef<Set<number>>(new Set());
+
+  // Debounce timer for batch checking
+  const checkTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const pendingCheckIdsRef = React.useRef<Set<number>>(new Set());
 
   // Local storage key
   const STORAGE_KEY = "@wishlist_ids";
@@ -126,6 +137,13 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
         }));
       });
     }
+
+    // Cleanup timer on unmount
+    return () => {
+      if (checkTimerRef.current) {
+        clearTimeout(checkTimerRef.current);
+      }
+    };
   }, [isAuthenticated]);
 
   const clearWishlistState = () => {
@@ -137,8 +155,10 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
       currentPage: 0,
       totalPages: 0,
       hasMore: false,
+      needsRefresh: false,
     });
     setOptimisticUpdates(new Set());
+    checkedProductsRef.current = new Set();
 
     // Clear local storage too
     if (!WISHLIST_API_ENABLED) {
@@ -146,7 +166,7 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
     }
   };
 
-  const loadWishlist = async () => {
+  const loadWishlist = async (silent = false) => {
     if (!isAuthenticated) {
       clearWishlistState();
       return;
@@ -155,7 +175,9 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
     // Use local storage fallback if API disabled
     if (!WISHLIST_API_ENABLED) {
       try {
-        setState((prev) => ({ ...prev, isLoading: true }));
+        if (!silent) {
+          setState((prev) => ({ ...prev, isLoading: true }));
+        }
         const ids = await loadLocalWishlist();
 
         setState((prev) => ({
@@ -174,11 +196,16 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
 
     // Use API if enabled
     try {
-      setState((prev) => ({ ...prev, isLoading: true }));
+      if (!silent) {
+        setState((prev) => ({ ...prev, isLoading: true }));
+      }
 
       const response = await wishlistApi.getWishlists({ page: 0, size: 20 });
 
       const productIds = new Set(response.content.map((item) => item.id));
+
+      // Clear checked cache since we have fresh data
+      checkedProductsRef.current = new Set(productIds);
 
       setState((prev) => ({
         ...prev,
@@ -188,6 +215,7 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
         totalPages: response.page.totalPages,
         hasMore: response.page.number < response.page.totalPages - 1,
         isLoading: false,
+        needsRefresh: false, // Reset refresh flag
       }));
     } catch (error: any) {
       console.error("Error loading wishlist:", error);
@@ -314,9 +342,16 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
     try {
       await wishlistApi.addToWishlist(productId);
 
-      // After successful add, reload wishlist to get fresh data
-      await loadWishlist();
+      // Mark as checked with correct status (in wishlist)
+      checkedProductsRef.current.add(productId);
 
+      // Mark that favorites tab needs refresh
+      setState((prev) => ({
+        ...prev,
+        needsRefresh: true,
+      }));
+
+      // Confirm optimistic update was correct
       setOptimisticUpdates((prev) => {
         const updated = new Set(prev);
         updated.delete(productId);
@@ -429,6 +464,9 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
     try {
       await wishlistApi.removeFromWishlist(productId);
 
+      // Mark as checked with correct status (not in wishlist)
+      checkedProductsRef.current.add(productId);
+
       // Confirm removal
       setOptimisticUpdates((prev) => {
         const updated = new Set(prev);
@@ -487,12 +525,70 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
     await loadWishlist();
   };
 
-  // Check multiple products - simplified since API doesn't support bulk check
-  // This will be accurate after loadWishlist is called
+  // Check multiple products using the bulk check API with debouncing
   const checkMultipleProducts = async (productIds: number[]) => {
-    // No-op - wishlist status is already available in state after loadWishlist
-    // Products in wishlistProductIds set are in wishlist
-    return;
+    if (!isAuthenticated || productIds.length === 0) {
+      return;
+    }
+
+    // If API is disabled, status is already in state
+    if (!WISHLIST_API_ENABLED) {
+      return;
+    }
+
+    // Add to pending check queue
+    productIds.forEach((id) => {
+      if (!checkedProductsRef.current.has(id)) {
+        pendingCheckIdsRef.current.add(id);
+      }
+    });
+
+    // Clear existing timer
+    if (checkTimerRef.current) {
+      clearTimeout(checkTimerRef.current);
+    }
+
+    // Debounce: wait 300ms before actually checking
+    checkTimerRef.current = setTimeout(async () => {
+      const idsToCheck = Array.from(pendingCheckIdsRef.current);
+      pendingCheckIdsRef.current.clear();
+
+      if (idsToCheck.length === 0) {
+        return;
+      }
+
+      try {
+        console.log(`[Wishlist] Batch checking ${idsToCheck.length} products`);
+
+        // Call API to check wishlist status for unchecked products
+        const result = await wishlistApi.checkWishlistItems(idsToCheck);
+
+        // Update wishlistProductIds based on API result
+        setState((prev) => {
+          const updatedIds = new Set(prev.wishlistProductIds);
+
+          // Update based on API response
+          Object.entries(result).forEach(([idStr, inWishlist]) => {
+            const id = parseInt(idStr);
+            if (inWishlist) {
+              updatedIds.add(id);
+            } else {
+              updatedIds.delete(id);
+            }
+            // Mark this product as checked
+            checkedProductsRef.current.add(id);
+          });
+
+          return {
+            ...prev,
+            wishlistProductIds: updatedIds,
+          };
+        });
+      } catch (error: any) {
+        console.error("Error checking wishlist items:", error);
+        // Silent fail - don't show toast for this background operation
+      }
+    }, 300); // 300ms debounce
   };
 
   const contextValue: WishlistContextType = {
