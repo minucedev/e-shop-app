@@ -218,13 +218,25 @@ class ApiClient {
         let errorMessage =
           data.message || `HTTP error! status: ${response.status}`;
 
-        // Log response details for debugging
-        console.log(`❌ API Error Response:`, {
-          status: response.status,
-          statusText: response.statusText,
-          endpoint,
-          data,
-        });
+        // Special handling for expected errors that shouldn't be logged
+        const expectedErrors = [
+          "haven't reviewed",
+          "already reviewed",
+          "already in wishlist",
+        ];
+        const isExpectedError = expectedErrors.some((msg) =>
+          data.message?.toLowerCase().includes(msg.toLowerCase())
+        );
+
+        // Log response details for debugging (except expected errors)
+        if (!isExpectedError) {
+          console.log(`❌ API Error Response:`, {
+            status: response.status,
+            statusText: response.statusText,
+            endpoint,
+            data,
+          });
+        }
 
         switch (response.status) {
           case 400:
@@ -237,7 +249,7 @@ class ApiClient {
             errorMessage = "Access denied";
             break;
           case 404:
-            errorMessage = "Resource not found";
+            errorMessage = data.message || "Resource not found";
             break;
           case 500:
             errorMessage =
