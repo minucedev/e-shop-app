@@ -68,8 +68,8 @@ const CartPurchase = () => {
   const handlePlaceOrder = async () => {
     if (!user || !defaultAddress) {
       Alert.alert(
-        "Error",
-        "User information or address is missing. Please try again."
+        "Lỗi",
+        "Thiếu thông tin người dùng hoặc địa chỉ. Vui lòng thử lại."
       );
       return;
     }
@@ -115,7 +115,7 @@ const CartPurchase = () => {
       const response = await orderApi.createOrder(payload);
 
       if (!response.success) {
-        Alert.alert("Order Failed", response.error || "An error occurred.");
+        Alert.alert("Đặt hàng thất bại", response.error || "Có lỗi xảy ra.");
         return;
       }
 
@@ -161,7 +161,7 @@ const CartPurchase = () => {
         }
       }
     } catch (error: any) {
-      Alert.alert("Error", "An unexpected error occurred: " + error.message);
+      Alert.alert("Lỗi", "Có lỗi không mong muốn xảy ra: " + error.message);
     } finally {
       setIsPlacingOrder(false);
     }
@@ -169,11 +169,11 @@ const CartPurchase = () => {
 
   // Delivery info derived from user and address state
   const deliveryInfo = {
-    name: user ? `${user.firstName} ${user.lastName}` : "Cannot get name",
-    email: user?.email || "Cannot get email",
+    name: user ? `${user.firstName} ${user.lastName}` : "Không lấy được tên",
+    email: user?.email || "Không lấy được email",
     address: defaultAddress
       ? `${defaultAddress.streetAddress}, ${defaultAddress.ward}, ${defaultAddress.district}, ${defaultAddress.city}`
-      : "No address found. Please add one.",
+      : "Chưa có địa chỉ. Vui lòng thêm địa chỉ.",
   };
 
   return (
@@ -181,37 +181,41 @@ const CartPurchase = () => {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View className="flex-row items-center justify-center pt-12 pb-4 px-4">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="absolute left-5"
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold text-black">Checkout</Text>
+      <View className="bg-white border-b border-gray-200">
+        <View className="flex-row items-center px-4 py-3">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={24} color="#222" />
+          </TouchableOpacity>
+          <Text className="text-lg font-semibold flex-1 text-center mr-10">
+            Thanh toán
+          </Text>
+        </View>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Delivery Info */}
         <View className="px-5">
-          <Text className="text-xl font-bold text-black mb-4 mt-4">
-            Delivery
+          <Text className="text-lg font-bold text-gray-900 mb-4 mt-4">
+            Thông tin giao hàng
           </Text>
           {/* Name */}
-          <View className="h-12 rounded-full border border-gray-300 px-5 mb-2 bg-white justify-center">
+          <View className="h-12 rounded-lg border border-gray-300 px-4 mb-3 bg-gray-50 justify-center">
             <Text className="text-base text-gray-900">{deliveryInfo.name}</Text>
           </View>
           {/* Email */}
-          <View className="h-12 rounded-full border border-gray-300 px-5 mb-2 bg-white justify-center">
+          <View className="h-12 rounded-lg border border-gray-300 px-4 mb-3 bg-gray-50 justify-center">
             <Text className="text-base text-gray-900">
               {deliveryInfo.email}
             </Text>
           </View>
           {/* Address */}
-          <View className="min-h-[48px] rounded-full border border-gray-300 px-5 py-3 mb-2 bg-white justify-center">
+          <View className="min-h-[48px] rounded-lg border border-gray-300 px-4 py-3 mb-3 bg-gray-50 justify-center">
             {isLoading ? (
-              <ActivityIndicator color="#000" />
+              <ActivityIndicator color="#3b82f6" />
             ) : (
               <Text className="text-base text-gray-900" numberOfLines={2}>
                 {deliveryInfo.address}
@@ -221,18 +225,18 @@ const CartPurchase = () => {
         </View>
 
         {/* Payment Method */}
-        <View className="px-5 mt-8">
-          <Text className="text-xl font-bold text-black mb-4">
-            Payment Method
+        <View className="px-5 mt-6">
+          <Text className="text-lg font-bold text-gray-900 mb-4">
+            Phương thức thanh toán
           </Text>
 
           {/* COD */}
           <TouchableOpacity
             onPress={() => setSelectedPaymentMethod("COD")}
-            className={`flex-row items-center p-4 rounded-2xl mb-3 ${
+            className={`flex-row items-center p-4 rounded-lg mb-3 ${
               selectedPaymentMethod === "COD"
-                ? "border-2 border-black bg-gray-50"
-                : "border border-gray-300"
+                ? "border-2 border-blue-500 bg-blue-50"
+                : "border border-gray-300 bg-white"
             }`}
             activeOpacity={0.7}
           >
@@ -243,11 +247,11 @@ const CartPurchase = () => {
                   : "ellipse-outline"
               }
               size={24}
-              color={selectedPaymentMethod === "COD" ? "#000" : "#666"}
+              color={selectedPaymentMethod === "COD" ? "#3b82f6" : "#9ca3af"}
             />
             <View className="flex-1 ml-3">
-              <Text className="text-base font-bold text-black">
-                Cash on Delivery (COD)
+              <Text className="text-base font-semibold text-gray-900">
+                Thanh toán khi nhận hàng (COD)
               </Text>
             </View>
           </TouchableOpacity>
@@ -255,10 +259,10 @@ const CartPurchase = () => {
           {/* VNPay */}
           <TouchableOpacity
             onPress={() => setSelectedPaymentMethod("VNPAY")}
-            className={`flex-row items-center p-4 rounded-2xl mb-3 ${
+            className={`flex-row items-center p-4 rounded-lg mb-3 ${
               selectedPaymentMethod === "VNPAY"
-                ? "border-2 border-black bg-gray-50"
-                : "border border-gray-300"
+                ? "border-2 border-blue-500 bg-blue-50"
+                : "border border-gray-300 bg-white"
             }`}
             activeOpacity={0.7}
           >
@@ -269,10 +273,12 @@ const CartPurchase = () => {
                   : "ellipse-outline"
               }
               size={24}
-              color={selectedPaymentMethod === "VNPAY" ? "#000" : "#666"}
+              color={selectedPaymentMethod === "VNPAY" ? "#3b82f6" : "#9ca3af"}
             />
             <View className="flex-1 ml-3">
-              <Text className="text-base font-bold text-black">VNPay</Text>
+              <Text className="text-base font-semibold text-gray-900">
+                VNPay
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -331,7 +337,7 @@ const CartPurchase = () => {
           );
         })()}
         <TouchableOpacity
-          className="bg-black rounded-full h-14 items-center justify-center"
+          className="bg-blue-600 rounded-xl h-14 items-center justify-center shadow-sm"
           activeOpacity={0.8}
           onPress={handlePlaceOrder}
           disabled={isPlacingOrder || isLoading}
@@ -339,7 +345,7 @@ const CartPurchase = () => {
           {isPlacingOrder ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text className="text-white text-lg font-bold">Place Order</Text>
+            <Text className="text-white text-lg font-bold">Đặt hàng</Text>
           )}
         </TouchableOpacity>
       </View>

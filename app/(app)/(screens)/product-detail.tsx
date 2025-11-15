@@ -7,18 +7,35 @@ import {
   ActivityIndicator,
   Dimensions,
   TextInput,
+  Alert,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 import {
   getProductDetail,
   ProductDetailResponse,
   ProductVariation,
 } from "@/services/productApi";
+import {
+  getMyReview,
+  getReviewSummary,
+  getReviews,
+  createReview,
+  updateReview,
+  deleteReview,
+  Review,
+  ReviewSummary,
+} from "@/services/reviewApi";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useProduct } from "@/contexts/ProductContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { ReviewCard } from "@/components/ReviewCard";
+import { ReviewSummaryCard } from "@/components/ReviewSummaryCard";
+import { ReviewForm } from "@/components/ReviewForm";
+import { MyReviewModal } from "@/components/MyReviewModal";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -30,6 +47,7 @@ const ProductDetail = () => {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { formatPrice } = useProduct();
+  const { user } = useAuth();
 
   // States
   const [product, setProduct] = useState<ProductDetailResponse | null>(null);
@@ -40,6 +58,22 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVariationDropdownOpen, setIsVariationDropdownOpen] = useState(false);
+
+  // Review states
+  const [myReview, setMyReview] = useState<Review | null>(null);
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(
+    null
+  );
+  const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const [reviewsPage, setReviewsPage] = useState(0);
+  const [reviewsTotalPages, setReviewsTotalPages] = useState(0);
+  const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState(false);
+  const [isReviewFormVisible, setIsReviewFormVisible] = useState(false);
+  const [isMyReviewModalVisible, setIsMyReviewModalVisible] = useState(false);
+  const [reviewFormMode, setReviewFormMode] = useState<"create" | "edit">(
+    "create"
+  );
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
   // Fetch product detail
   useEffect(() => {
@@ -63,6 +97,38 @@ const ProductDetail = () => {
       fetchProductDetail();
     }
   }, [productId]);
+
+  // Fetch reviews data
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!productId) return;
+
+      setIsLoadingReviews(true);
+      try {
+        // Fetch review summary (always available)
+        const summary = await getReviewSummary(parseInt(productId));
+        setReviewSummary(summary);
+
+        // Fetch first page of all reviews
+        const reviewsData = await getReviews(parseInt(productId), 0, 5);
+        setAllReviews(reviewsData.content);
+        setReviewsPage(reviewsData.page.number);
+        setReviewsTotalPages(reviewsData.page.totalPages);
+
+        // Fetch user's review if logged in
+        if (user) {
+          const userReview = await getMyReview(parseInt(productId));
+          setMyReview(userReview);
+        }
+      } catch (error: any) {
+        console.error("Error fetching reviews:", error);
+      } finally {
+        setIsLoadingReviews(false);
+      }
+    };
+
+    fetchReviews();
+  }, [productId, user]);
 
   // Get current images based on selected variation
   const currentImages = selectedVariation?.images || [];
@@ -101,8 +167,201 @@ const ProductDetail = () => {
       return;
     }
 
-    // Add to cart with variationId
-    await addToCart(selectedVariation.id, quantity);
+    try {
+      await addToCart(selectedVariation.id, quantity);
+      alert("Đã thêm vào giỏ hàng");
+    } catch (error) {
+      alert("Không thể thêm vào giỏ hàng");
+    }
+  };
+
+  // Review handlers
+  const handleOpenReviewForm = () => {
+    if (!user) {
+      Toast.show({
+        type: "error",
+        text1: "Chưa đăng nhập",
+        text2: "Vui lòng đăng nhập để đánh giá sản phẩm",
+      });
+      return;
+    }
+
+    if (myReview) {
+      setReviewFormMode("edit");
+    } else {
+      setReviewFormMode("create");
+    }
+    setIsReviewFormVisible(true);
+  };
+
+  const handleSubmitReview = async (rating: number, content: string) => {
+    if (!productId) return;
+
+    try {
+      if (reviewFormMode === "create") {
+        const newReview = await createReview(parseInt(productId), {
+          rating,
+          content,
+        });
+        setMyReview(newReview);
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Đã gửi đánh giá của bạn",
+        });
+      } else {
+        if (!myReview) return;
+        const updatedReview = await updateReview(
+          parseInt(productId),
+          myReview.id,
+          { rating, content }
+        );
+        setMyReview(updatedReview);
+        Toast.show({
+          type: "success",
+          text1: "Thành công",
+          text2: "Đã cập nhật đánh giá",
+        });
+      }
+
+      // Refresh review summary
+      const summary = await getReviewSummary(parseInt(productId));
+      setReviewSummary(summary);
+
+      // Refresh all reviews list
+      const reviewsData = await getReviews(parseInt(productId), 0, 5);
+      setAllReviews(reviewsData.content);
+      setReviewsPage(reviewsData.page.number);
+      setReviewsTotalPages(reviewsData.page.totalPages);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể gửi đánh giá";
+
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: errorMessage,
+      });
+      // Don't throw - let the form handle the error gracefully
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    if (!myReview || !productId) return;
+
+    Alert.alert("Xóa đánh giá", "Bạn có chắc chắn muốn xóa đánh giá này?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteReview(parseInt(productId), myReview.id);
+            setMyReview(null);
+
+            // Refresh review summary
+            const summary = await getReviewSummary(parseInt(productId));
+            setReviewSummary(summary);
+
+            // Refresh all reviews list
+            const reviewsData = await getReviews(parseInt(productId), 0, 5);
+            setAllReviews(reviewsData.content);
+            setReviewsPage(reviewsData.page.number);
+            setReviewsTotalPages(reviewsData.page.totalPages);
+
+            Toast.show({
+              type: "success",
+              text1: "Thành công",
+              text2: "Đã xóa đánh giá",
+            });
+          } catch (error: any) {
+            Toast.show({
+              type: "error",
+              text1: "Lỗi",
+              text2: "Không thể xóa đánh giá",
+            });
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleLoadMoreReviews = async () => {
+    if (
+      !productId ||
+      isLoadingMoreReviews ||
+      reviewsPage >= reviewsTotalPages - 1
+    ) {
+      return;
+    }
+
+    setIsLoadingMoreReviews(true);
+    try {
+      const nextPage = reviewsPage + 1;
+      const reviewsData = await getReviews(parseInt(productId), nextPage, 5);
+      setAllReviews([...allReviews, ...reviewsData.content]);
+      setReviewsPage(reviewsData.page.number);
+    } catch (error: any) {
+      console.error("Error loading more reviews:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải thêm đánh giá",
+      });
+    } finally {
+      setIsLoadingMoreReviews(false);
+    }
+  };
+
+  const handleEditReview = (review: Review) => {
+    // Only allow editing own review
+    if (user?.id !== review.userId) return;
+
+    setReviewFormMode("edit");
+    setIsReviewFormVisible(true);
+  };
+
+  const handleDeleteReviewFromList = async (review: Review) => {
+    // Only allow deleting own review
+    if (!productId || user?.id !== review.userId) return;
+
+    Alert.alert("Xóa đánh giá", "Bạn có chắc chắn muốn xóa đánh giá này?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteReview(parseInt(productId), review.id);
+            setMyReview(null);
+
+            // Refresh review summary
+            const summary = await getReviewSummary(parseInt(productId));
+            setReviewSummary(summary);
+
+            // Refresh all reviews list
+            const reviewsData = await getReviews(parseInt(productId), 0, 5);
+            setAllReviews(reviewsData.content);
+            setReviewsPage(reviewsData.page.number);
+            setReviewsTotalPages(reviewsData.page.totalPages);
+
+            Toast.show({
+              type: "success",
+              text1: "Thành công",
+              text2: "Đã xóa đánh giá",
+            });
+          } catch (error: any) {
+            Toast.show({
+              type: "error",
+              text1: "Lỗi",
+              text2: "Không thể xóa đánh giá",
+            });
+          }
+        },
+      },
+    ]);
   };
 
   // Handle quantity change
@@ -256,11 +515,13 @@ const ProductDetail = () => {
             <View className="flex-row items-center">
               <Ionicons name="star" size={18} color="#FFA500" />
               <Text className="text-gray-900 font-semibold ml-1">
-                {product.averageRating.toFixed(1)}
+                {reviewSummary?.averageRating
+                  ? reviewSummary.averageRating.toFixed(1)
+                  : "0.0"}
               </Text>
             </View>
             <Text className="text-gray-500 ml-2">
-              ({product.totalRatings} đánh giá)
+              ({reviewSummary?.totalReviews || 0} đánh giá)
             </Text>
           </View>
 
@@ -501,8 +762,141 @@ const ProductDetail = () => {
                 </View>
               </View>
             )}
+
+          {/* Reviews Section */}
+          <View className="mb-6">
+            <Text className="text-lg font-semibold text-gray-900 mb-3">
+              Đánh giá sản phẩm
+            </Text>
+
+            {/* Review Summary */}
+            {isLoadingReviews ? (
+              <View className="py-8">
+                <ActivityIndicator size="small" color="#3B82F6" />
+              </View>
+            ) : reviewSummary && reviewSummary.totalReviews > 0 ? (
+              <ReviewSummaryCard summary={reviewSummary} />
+            ) : (
+              <View className="bg-gray-50 rounded-lg p-6 items-center">
+                <Ionicons name="chatbubble-outline" size={48} color="#9CA3AF" />
+                <Text className="text-gray-500 mt-2">Chưa có đánh giá nào</Text>
+              </View>
+            )}
+
+            {/* User's Review Action */}
+            {user && (
+              <View className="mt-4">
+                {myReview ? (
+                  <TouchableOpacity
+                    className="bg-gray-100 py-3 rounded-lg flex-row items-center justify-center gap-2"
+                    onPress={() => setIsMyReviewModalVisible(true)}
+                  >
+                    <Ionicons
+                      name="chatbox-ellipses-outline"
+                      size={20}
+                      color="#3B82F6"
+                    />
+                    <Text className="text-blue-600 font-semibold">
+                      Xem đánh giá của tôi
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    className="bg-blue-600 py-3 rounded-lg flex-row items-center justify-center gap-2"
+                    onPress={handleOpenReviewForm}
+                  >
+                    <Ionicons name="create-outline" size={20} color="#FFF" />
+                    <Text className="text-white font-semibold">
+                      Viết đánh giá
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Login prompt if not logged in */}
+            {!user && (
+              <TouchableOpacity
+                className="mt-4 bg-gray-100 py-3 rounded-lg"
+                onPress={() => router.push("/(auth)/login")}
+              >
+                <Text className="text-gray-700 text-center">
+                  Đăng nhập để viết đánh giá
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* All Reviews List */}
+            {allReviews.length > 0 && (
+              <View className="mt-6">
+                <Text className="text-base font-semibold text-gray-900 mb-3">
+                  Tất cả đánh giá ({reviewSummary?.totalReviews || 0})
+                </Text>
+                {allReviews.map((review) => (
+                  <View key={review.id} className="mb-3">
+                    <ReviewCard
+                      review={review}
+                      isOwnReview={user?.id === review.userId}
+                      onEdit={
+                        user?.id === review.userId
+                          ? () => handleEditReview(review)
+                          : undefined
+                      }
+                      onDelete={
+                        user?.id === review.userId
+                          ? () => handleDeleteReviewFromList(review)
+                          : undefined
+                      }
+                    />
+                  </View>
+                ))}
+
+                {/* Load More Button */}
+                {reviewsPage < reviewsTotalPages - 1 && (
+                  <TouchableOpacity
+                    className="bg-gray-100 py-3 rounded-lg flex-row items-center justify-center gap-2 mt-2"
+                    onPress={handleLoadMoreReviews}
+                    disabled={isLoadingMoreReviews}
+                  >
+                    {isLoadingMoreReviews ? (
+                      <ActivityIndicator size="small" color="#3B82F6" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="chevron-down"
+                          size={20}
+                          color="#3B82F6"
+                        />
+                        <Text className="text-blue-600 font-semibold">
+                          Xem thêm đánh giá
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
         </View>
       </ScrollView>
+
+      {/* Review Form Modal */}
+      <ReviewForm
+        visible={isReviewFormVisible}
+        onClose={() => setIsReviewFormVisible(false)}
+        onSubmit={handleSubmitReview}
+        initialReview={reviewFormMode === "edit" ? myReview : null}
+        mode={reviewFormMode}
+      />
+
+      {/* My Review Modal */}
+      <MyReviewModal
+        visible={isMyReviewModalVisible}
+        onClose={() => setIsMyReviewModalVisible(false)}
+        review={myReview}
+        onEdit={handleOpenReviewForm}
+        onDelete={handleDeleteReview}
+      />
 
       {/* Bottom Action Bar */}
       <View className="px-4 py-4 bg-white border-t border-gray-200">

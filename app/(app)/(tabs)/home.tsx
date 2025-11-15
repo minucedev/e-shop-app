@@ -13,7 +13,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProduct } from "@/contexts/ProductContext";
 import { getActiveCampaigns, ICampaign } from "@/services/campaignApi";
-import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
 
@@ -27,9 +26,6 @@ const Home = () => {
   const [campaigns, setCampaigns] = React.useState<ICampaign[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = React.useState(true);
 
-  // Get wishlist from WishlistContext
-  const { isInWishlist, toggleWishlist, checkMultipleProducts } = useWishlist();
-
   // Get cart from CartContext
   const { addToCart } = useCart();
 
@@ -42,17 +38,7 @@ const Home = () => {
       .finally(() => setLoadingCampaigns(false));
   }, []);
 
-  // Check wishlist status when products are loaded
-  React.useEffect(() => {
-    if (products.length > 0) {
-      const productIds = products.map((p) => p.id);
-      checkMultipleProducts(productIds);
-    }
-  }, [products]);
-
   const renderProductItem = ({ item }: { item: (typeof products)[0] }) => {
-    const isItemFavorite = isInWishlist(item.id);
-
     // Calculate discount percentage for display
     const discountPercent =
       item.discountType === "PERCENTAGE"
@@ -93,20 +79,6 @@ const Home = () => {
               </Text>
             </View>
           )}
-          {/* Favorite Icon */}
-          <TouchableOpacity
-            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
-            onPress={(e) => {
-              e.stopPropagation();
-              toggleWishlist(item.id);
-            }}
-          >
-            <Ionicons
-              name={isItemFavorite ? "heart" : "heart-outline"}
-              size={25}
-              color={isItemFavorite ? "#e74c3c" : "#666"}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Product Info */}
@@ -270,7 +242,6 @@ const Home = () => {
           <FlatList
             data={products.slice(6, 9)}
             renderItem={({ item }) => {
-              const isItemFavorite = isInWishlist(item.id);
               const hasDiscount =
                 item.displayOriginalPrice > item.displaySalePrice;
               return (
@@ -296,20 +267,6 @@ const Home = () => {
                     <View className="absolute top-2 left-2 bg-red-500 rounded-full px-2 py-1">
                       <Text className="text-xs font-bold text-white">HOT</Text>
                     </View>
-                    {/* Favorite Icon */}
-                    <TouchableOpacity
-                      className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        toggleWishlist(item.id);
-                      }}
-                    >
-                      <Ionicons
-                        name={isItemFavorite ? "heart" : "heart-outline"}
-                        size={25}
-                        color={isItemFavorite ? "#e74c3c" : "#666"}
-                      />
-                    </TouchableOpacity>
                   </View>
 
                   {/* Product Info */}

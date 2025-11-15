@@ -7,13 +7,11 @@ import type { Product } from "@/contexts/ProductContext";
 
 interface ProductCardProps {
   product: Product;
-  isInWishlist: boolean;
-  onToggleWishlist: (id: number) => void;
   formatPrice: (price: number) => string;
 }
 
 export const ProductCard = React.memo<ProductCardProps>(
-  ({ product, isInWishlist, onToggleWishlist, formatPrice }) => {
+  ({ product, formatPrice }) => {
     const router = useRouter();
 
     const hasDiscount = product.displayOriginalPrice > product.displaySalePrice;
@@ -31,14 +29,6 @@ export const ProductCard = React.memo<ProductCardProps>(
     const handlePress = React.useCallback(() => {
       router.push(`/(app)/(screens)/product-detail?id=${product.id}`);
     }, [product.id, router]);
-
-    const handleToggleWishlist = React.useCallback(
-      (e: any) => {
-        e.stopPropagation();
-        onToggleWishlist(product.id);
-      },
-      [product.id, onToggleWishlist]
-    );
 
     return (
       <TouchableOpacity
@@ -66,18 +56,6 @@ export const ProductCard = React.memo<ProductCardProps>(
               </Text>
             </View>
           )}
-
-          {/* Favorite Button */}
-          <TouchableOpacity
-            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
-            onPress={handleToggleWishlist}
-          >
-            <Ionicons
-              name={isInWishlist ? "heart" : "heart-outline"}
-              size={20}
-              color={isInWishlist ? "#e74c3c" : "#666"}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Product Info */}

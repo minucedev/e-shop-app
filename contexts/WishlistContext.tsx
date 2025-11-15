@@ -289,18 +289,18 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
       return;
     }
 
-    // Optimistic update
-    const newWishlistIds = new Set([...state.wishlistProductIds, productId]);
+    // Optimistic update - add to UI immediately
     setState((prev) => ({
       ...prev,
-      wishlistProductIds: newWishlistIds,
+      wishlistProductIds: new Set([...prev.wishlistProductIds, productId]),
     }));
     setOptimisticUpdates((prev) => new Set([...prev, productId]));
 
     // Use local storage fallback if API disabled
     if (!WISHLIST_API_ENABLED) {
       try {
-        await saveLocalWishlist(newWishlistIds);
+        const updatedIds = new Set([...state.wishlistProductIds, productId]);
+        await saveLocalWishlist(updatedIds);
 
         setOptimisticUpdates((prev) => {
           const updated = new Set(prev);
@@ -345,10 +345,10 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
       // Mark as checked with correct status (in wishlist)
       checkedProductsRef.current.add(productId);
 
-      // Mark that favorites tab needs refresh
+      // Optimistic update was correct, just mark as needing refresh
       setState((prev) => ({
         ...prev,
-        needsRefresh: true,
+        needsRefresh: true, // Mark that favorites tab needs refresh
       }));
 
       // Confirm optimistic update was correct
@@ -366,7 +366,27 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
     } catch (error: any) {
       console.error("Error adding to wishlist:", error);
 
-      // Revert optimistic update
+      // Handle 'already in wishlist' error - treat as success, keep optimistic update
+      if (
+        error.response?.status === 400 &&
+        (error.message?.includes("already in wishlist") ||
+          error.response?.data?.message?.includes("already in wishlist"))
+      ) {
+        // Product is already in wishlist, keep the optimistic update
+        setState((prev) => ({
+          ...prev,
+          needsRefresh: true,
+        }));
+        checkedProductsRef.current.add(productId);
+        setOptimisticUpdates((prev) => {
+          const updated = new Set(prev);
+          updated.delete(productId);
+          return updated;
+        });
+        return; // Don't show error toast, don't revert
+      }
+
+      // For other errors, revert optimistic update
       setState((prev) => ({
         ...prev,
         wishlistProductIds: new Set(
@@ -405,16 +425,20 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
       return;
     }
 
-    // Optimistic update
+    // Save original state for potential revert
     const originalItems = state.items;
     const originalProductIds = state.wishlistProductIds;
+
+    // Create new state without the removed product
     const newWishlistIds = new Set(
       [...state.wishlistProductIds].filter((id) => id !== productId)
     );
+    const newItems = state.items.filter((item) => item.id !== productId);
 
+    // Optimistic update - remove from UI immediately
     setState((prev) => ({
       ...prev,
-      items: prev.items.filter((item) => item.id !== productId),
+      items: newItems,
       wishlistProductIds: newWishlistIds,
     }));
     setOptimisticUpdates((prev) => new Set([...prev, productId]));
@@ -465,7 +489,13 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
       await wishlistApi.removeFromWishlist(productId);
 
       // Mark as checked with correct status (not in wishlist)
-      checkedProductsRef.current.add(productId);
+      checkedProductsRef.current.delete(productId);
+
+      // Optimistic update was correct, just mark as needing refresh and confirm
+      setState((prev) => ({
+        ...prev,
+        needsRefresh: true, // Mark that favorites tab needs refresh
+      }));
 
       // Confirm removal
       setOptimisticUpdates((prev) => {
@@ -481,6 +511,34 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({
       });
     } catch (error: any) {
       console.error("Error removing from wishlist:", error);
+
+      // Handle specific error cases
+      const is404 = error.response?.status === 404;
+      const isProductDeleted =
+        error.message?.includes("not found") ||
+        error.message?.includes("does not exist") ||
+        error.response?.data?.message?.includes("not found");
+
+      // If product is already removed or doesn't exist, treat as success
+      if (is404 || isProductDeleted) {
+        console.log("Product not in wishlist or deleted, treating as success");
+
+        // Keep the optimistic update (already removed from UI)
+        checkedProductsRef.current.delete(productId);
+
+        setOptimisticUpdates((prev) => {
+          const updated = new Set(prev);
+          updated.delete(productId);
+          return updated;
+        });
+
+        Toast.show({
+          type: "info",
+          text1: "Đã cập nhật",
+          text2: "Sản phẩm không còn trong danh sách yêu thích",
+        });
+        return;
+      }
 
       // Revert optimistic update
       setState((prev) => ({

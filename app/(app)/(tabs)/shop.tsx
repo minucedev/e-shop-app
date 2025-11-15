@@ -12,7 +12,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useProduct } from "@/contexts/ProductContext";
 import { useFilter } from "@/contexts/FilterContext";
-import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
 import { FilterBottomSheet } from "@/components/FilterBottomSheet";
@@ -38,9 +37,6 @@ const Shop = () => {
   // Lấy filter từ FilterContext
   const { filters, setSearchQuery, getFilterParams, hasActiveFilters } =
     useFilter();
-
-  // Lấy wishlist từ WishlistContext
-  const { isInWishlist, toggleWishlist, checkMultipleProducts } = useWishlist();
 
   // Lấy cart từ CartContext (not used but keeping for consistency)
   const { addToCart } = useCart();
@@ -118,22 +114,6 @@ const Shop = () => {
     }
   }, [filters]);
 
-  // Check wishlist status when products change
-  React.useEffect(() => {
-    if (filteredProducts.length > 0) {
-      const productIds = filteredProducts.map((p) => p.id);
-      checkMultipleProducts(productIds);
-    }
-  }, [filteredProducts]);
-
-  // Xử lý toggle yêu thích
-  const handleToggleFavorite = React.useCallback(
-    (id: number) => {
-      toggleWishlist(id);
-    },
-    [toggleWishlist]
-  );
-
   // Reset search
   const resetSearch = React.useCallback(() => {
     setSearchText("");
@@ -172,14 +152,9 @@ const Shop = () => {
   // Memoize renderItem for better performance
   const renderItem = React.useCallback(
     ({ item }: { item: any }) => (
-      <ProductCard
-        product={item}
-        isInWishlist={isInWishlist(item.id)}
-        onToggleWishlist={toggleWishlist}
-        formatPrice={formatPrice}
-      />
+      <ProductCard product={item} formatPrice={formatPrice} />
     ),
-    [isInWishlist, toggleWishlist, formatPrice]
+    [formatPrice]
   );
 
   return (

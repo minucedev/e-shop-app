@@ -218,14 +218,20 @@ class ApiClient {
         let errorMessage =
           data.message || `HTTP error! status: ${response.status}`;
 
-        // Log response details for debugging
-        console.log(`❌ API Error Response:`, {
-          status: response.status,
-          statusText: response.statusText,
-          endpoint,
-          data,
-        });
+        // Log response details for debugging (skip common expected errors)
+        const isExpectedError =
+          data.message?.includes("haven't reviewed") ||
+          data.message?.includes("hasn't reviewed") ||
+          data.message?.includes("already in wishlist");
 
+        if (!isExpectedError) {
+          console.log(`❌ API Error Response:`, {
+            status: response.status,
+            statusText: response.statusText,
+            endpoint,
+            data,
+          });
+        }
         switch (response.status) {
           case 400:
             errorMessage = data.message || "Invalid request data";
@@ -259,6 +265,14 @@ class ApiClient {
         error.name === "SyntaxError" &&
         error.message &&
         error.message.includes("JSON Parse error: Unexpected end of input")
+      ) {
+        // Không log lỗi này ra console
+      }
+      // Ẩn log lỗi "haven't reviewed" và "already in wishlist" - đây là trường hợp bình thường
+      else if (
+        error.message &&
+        (error.message.includes("haven't reviewed") ||
+          error.message.includes("already in wishlist"))
       ) {
         // Không log lỗi này ra console
       } else {

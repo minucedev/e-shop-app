@@ -31,12 +31,12 @@ const Cart = () => {
   // Handle remove item with confirmation
   const handleRemoveItem = (cartItem: any) => {
     Alert.alert(
-      "Remove Item",
-      `Are you sure you want to remove "${cartItem.productName}" from your cart?`,
+      "Xóa sản phẩm",
+      `Bạn có chắc chắn muốn xóa "${cartItem.productName}" khỏi giỏ hàng?`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Hủy", style: "cancel" },
         {
-          text: "Remove",
+          text: "Xóa",
           style: "destructive",
           onPress: () => removeFromCart(cartItem.productVariationId),
         },
@@ -47,7 +47,10 @@ const Cart = () => {
   // Handle checkout
   const handleCheckout = () => {
     if (cartItems.length === 0) {
-      Alert.alert("Empty Cart", "Please add some items to your cart first.");
+      Alert.alert(
+        "Giỏ hàng trống",
+        "Vui lòng thêm sản phẩm vào giỏ hàng trước."
+      );
       return;
     }
 
@@ -63,12 +66,12 @@ const Cart = () => {
   // Handle clear cart
   const handleClearCart = () => {
     Alert.alert(
-      "Clear Cart",
-      "Are you sure you want to remove all items from your cart?",
+      "Xóa giỏ hàng",
+      "Bạn có chắc chắn muốn xóa tất cả sản phẩm khỏi giỏ hàng?",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: "Hủy", style: "cancel" },
         {
-          text: "Clear All",
+          text: "Xóa tất cả",
           style: "destructive",
           onPress: () => clearCart(),
         },
@@ -107,7 +110,7 @@ const Cart = () => {
                 {formatPrice(item.unitPrice)}
               </Text>
               <Text className="text-sm text-gray-500">
-                Total: {formatPrice(item.totalPrice)}
+                Tổng: {formatPrice(item.totalPrice)}
               </Text>
             </View>
           </View>
@@ -123,7 +126,7 @@ const Cart = () => {
 
         {/* Quantity Controls */}
         <View className="flex-row items-center justify-between px-4 pb-4 border-t border-gray-100 pt-3">
-          <Text className="text-sm text-gray-600 font-medium">Quantity</Text>
+          <Text className="text-sm text-gray-600 font-medium">Số lượng</Text>
           <View className="flex-row items-center">
             <TouchableOpacity
               className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
@@ -160,9 +163,9 @@ const Cart = () => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-gray-50 items-center justify-center">
+      <View className="flex-1 bg-white items-center justify-center">
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-gray-600 mt-2">Loading your cart...</Text>
+        <Text className="text-gray-600 mt-4">Đang tải...</Text>
       </View>
     );
   }
@@ -172,9 +175,9 @@ const Cart = () => {
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
 
       {/* Header */}
-      <View className="bg-white px-6 py-4 flex-row items-center justify-between border-b border-gray-100 shadow-sm">
+      <View className="bg-white px-6 py-4 flex-row items-center justify-between border-b border-gray-200">
         <View className="flex-row items-center">
-          <Text className="text-xl font-bold text-gray-900">My Cart</Text>
+          <Text className="text-xl font-bold text-gray-900">Giỏ hàng</Text>
           {itemCount > 0 && (
             <View className="ml-2 bg-blue-500 rounded-full w-6 h-6 items-center justify-center">
               <Text className="text-white text-xs font-bold">{itemCount}</Text>
@@ -199,18 +202,18 @@ const Cart = () => {
             <Ionicons name="bag-outline" size={40} color="#3b82f6" />
           </View>
           <Text className="text-xl font-bold text-gray-900 mb-2">
-            Your cart is empty
+            Giỏ hàng trống
           </Text>
           <Text className="text-gray-600 text-center mb-6 leading-5">
-            Looks like you haven't added any items to your cart yet. {"\n"}
-            Start shopping to fill it up!
+            Bạn chưa có sản phẩm nào trong giỏ hàng. {"\n"}
+            Hãy bắt đầu mua sắm ngay!
           </Text>
           <TouchableOpacity
             className="bg-blue-500 px-8 py-3 rounded-full shadow-lg"
             onPress={() => router.push("/(app)/(tabs)/shop")}
           >
             <Text className="text-white font-semibold text-base">
-              Start Shopping
+              Mua sắm ngay
             </Text>
           </TouchableOpacity>
         </View>
@@ -237,7 +240,7 @@ const Cart = () => {
               <View className="flex-row items-center">
                 <Ionicons name="add-circle" size={20} color="#6b7280" />
                 <Text className="text-gray-700 font-medium ml-2">
-                  Continue Shopping
+                  Tiếp tục mua sắm
                 </Text>
               </View>
             </TouchableOpacity>
@@ -248,11 +251,11 @@ const Cart = () => {
             {/* Order Summary */}
             <View className="mb-4">
               <Text className="text-lg font-bold text-gray-900 mb-3">
-                Order Summary
+                Tóm tắt đơn hàng
               </Text>
 
               <View className="flex-row justify-between mb-2">
-                <Text className="text-gray-600">Items ({itemCount})</Text>
+                <Text className="text-gray-600">Sản phẩm ({itemCount})</Text>
                 <Text className="text-gray-900 font-semibold">
                   {formatPrice(totalAmount)}
                 </Text>
@@ -265,7 +268,9 @@ const Cart = () => {
 
               <View className="border-t border-gray-200 pt-3 mt-2">
                 <View className="flex-row justify-between">
-                  <Text className="text-lg font-bold text-gray-900">Total</Text>
+                  <Text className="text-lg font-bold text-gray-900">
+                    Tổng cộng
+                  </Text>
                   <Text className="text-xl font-bold text-blue-600">
                     {formatPrice(totalAmount + 30000)}
                   </Text>
@@ -281,7 +286,7 @@ const Cart = () => {
             >
               <View className="flex-row items-center">
                 <Text className="text-white text-lg font-bold mr-2">
-                  Proceed to Checkout
+                  Tiến hành thanh toán
                 </Text>
                 <Ionicons name="arrow-forward" size={20} color="white" />
               </View>
@@ -291,7 +296,7 @@ const Cart = () => {
             <View className="flex-row items-center justify-center mt-3">
               <Ionicons name="shield-checkmark" size={16} color="#10b981" />
               <Text className="text-xs text-gray-500 ml-1">
-                Secure checkout with SSL encryption
+                Thanh toán an toàn với mã hóa SSL
               </Text>
             </View>
           </View>
