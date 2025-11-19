@@ -144,7 +144,7 @@ const Cart = () => {
             </Text>
 
             <TouchableOpacity
-              className="w-8 h-8 bg-blue-500 rounded-full items-center justify-center"
+              className="w-8 h-8 bg-blue-600 rounded-full items-center justify-center"
               onPress={() =>
                 updateQuantity(item.productVariationId, item.quantity + 1)
               }
@@ -168,16 +168,16 @@ const Cart = () => {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View className="bg-white px-6 py-4 flex-row items-center justify-between border-b border-gray-100 shadow-sm">
         <View className="flex-row items-center">
-          <Text className="text-xl font-bold text-gray-900">My Cart</Text>
+          <Text className="text-3xl font-bold text-gray-900">My Cart</Text>
           {itemCount > 0 && (
-            <View className="ml-2 bg-blue-500 rounded-full w-6 h-6 items-center justify-center">
-              <Text className="text-white text-xs font-bold">{itemCount}</Text>
+            <View className="ml-3 bg-blue-600 rounded-full w-7 h-7 items-center justify-center">
+              <Text className="text-white text-sm font-bold">{itemCount}</Text>
             </View>
           )}
         </View>
@@ -187,29 +187,29 @@ const Cart = () => {
             className="p-2 bg-red-50 rounded-full"
             onPress={handleClearCart}
           >
-            <Ionicons name="trash-outline" size={20} color="#ef4444" />
+            <Ionicons name="trash-outline" size={22} color="#ef4444" />
           </TouchableOpacity>
         )}
       </View>
 
       {/* Cart Content */}
       {cartItems.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="w-24 h-24 bg-blue-50 rounded-full items-center justify-center mb-4">
-            <Ionicons name="bag-outline" size={40} color="#3b82f6" />
+        <View className="flex-1 items-center justify-center px-6 bg-white">
+          <View className="w-28 h-28 bg-blue-50 rounded-full items-center justify-center mb-6">
+            <Ionicons name="bag-outline" size={48} color="#2563eb" />
           </View>
-          <Text className="text-xl font-bold text-gray-900 mb-2">
+          <Text className="text-2xl font-bold text-gray-900 mb-3">
             Your cart is empty
           </Text>
-          <Text className="text-gray-600 text-center mb-6 leading-5">
+          <Text className="text-gray-600 text-center mb-8 leading-6 text-base">
             Looks like you haven't added any items to your cart yet. {"\n"}
             Start shopping to fill it up!
           </Text>
           <TouchableOpacity
-            className="bg-blue-500 px-8 py-3 rounded-full shadow-lg"
+            className="bg-blue-600 px-10 py-4 rounded-full shadow-lg"
             onPress={() => router.push("/(app)/(tabs)/shop")}
           >
-            <Text className="text-white font-semibold text-base">
+            <Text className="text-white font-bold text-base">
               Start Shopping
             </Text>
           </TouchableOpacity>
@@ -218,7 +218,7 @@ const Cart = () => {
         <>
           {/* Cart Items List */}
           <ScrollView
-            className="flex-1 px-4 py-4"
+            className="flex-1 px-4 py-4 bg-white"
             showsVerticalScrollIndicator={false}
           >
             <FlatList
@@ -231,12 +231,12 @@ const Cart = () => {
 
             {/* Continue Shopping Button */}
             <TouchableOpacity
-              className="bg-gray-100 py-3 rounded-xl items-center mt-2 mb-4"
+              className="bg-blue-50 py-4 rounded-xl items-center mt-2 mb-4 border border-blue-100"
               onPress={() => router.push("/(app)/(tabs)/shop")}
             >
               <View className="flex-row items-center">
-                <Ionicons name="add-circle" size={20} color="#6b7280" />
-                <Text className="text-gray-700 font-medium ml-2">
+                <Ionicons name="add-circle" size={22} color="#2563eb" />
+                <Text className="text-blue-600 font-semibold ml-2 text-base">
                   Continue Shopping
                 </Text>
               </View>
@@ -275,7 +275,7 @@ const Cart = () => {
 
             {/* Checkout Button */}
             <TouchableOpacity
-              className="bg-blue-500 py-4 rounded-xl items-center shadow-lg"
+              className="bg-blue-600 py-4 rounded-xl items-center shadow-lg"
               onPress={handleCheckout}
               activeOpacity={0.8}
             >
@@ -283,7 +283,7 @@ const Cart = () => {
                 <Text className="text-white text-lg font-bold mr-2">
                   Proceed to Checkout
                 </Text>
-                <Ionicons name="arrow-forward" size={20} color="white" />
+                <Ionicons name="arrow-forward" size={22} color="white" />
               </View>
             </TouchableOpacity>
 

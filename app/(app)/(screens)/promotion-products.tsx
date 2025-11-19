@@ -12,7 +12,6 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useProduct } from "@/contexts/ProductContext";
-import { useWishlist } from "@/contexts/WishlistContext";
 import { ProductCard } from "@/components/ProductCard";
 import { getProducts } from "@/services/productApi";
 import { getCampaignById, ICampaign } from "@/services/campaignApi";
@@ -24,7 +23,6 @@ const PromotionProducts = () => {
   const { campaignId, campaignName } = params;
 
   const { formatPrice } = useProduct();
-  const { isInWishlist, toggleWishlist } = useWishlist();
 
   const [campaign, setCampaign] = React.useState<ICampaign | null>(null);
   const [products, setProducts] = React.useState<Product[]>([]);
@@ -264,12 +262,7 @@ const PromotionProducts = () => {
               onEndReachedThreshold={0.5}
               ListFooterComponent={renderFooter}
               renderItem={({ item }) => (
-                <ProductCard
-                  product={item}
-                  isInWishlist={isInWishlist(item.id)}
-                  onToggleWishlist={toggleWishlist}
-                  formatPrice={formatPrice}
-                />
+                <ProductCard product={item} formatPrice={formatPrice} />
               )}
             />
           </View>

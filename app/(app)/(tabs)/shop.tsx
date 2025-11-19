@@ -12,7 +12,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useProduct } from "@/contexts/ProductContext";
 import { useFilter } from "@/contexts/FilterContext";
-import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
 import { FilterBottomSheet } from "@/components/FilterBottomSheet";
@@ -39,9 +38,6 @@ const Shop = () => {
   const { filters, setSearchQuery, getFilterParams, hasActiveFilters } =
     useFilter();
 
-  // Lấy wishlist từ WishlistContext
-  const { isInWishlist, toggleWishlist } = useWishlist();
-
   // Lấy cart từ CartContext (not used but keeping for consistency)
   const { addToCart } = useCart();
   const router = useRouter();
@@ -51,7 +47,7 @@ const Shop = () => {
   const [showFilterModal, setShowFilterModal] = React.useState(false);
   const [isInitialized, setIsInitialized] = React.useState(false);
   const lastFetchedParamsRef = React.useRef<string>("");
-  
+
   // Animated value for smooth fade transition
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const [isTransitioning, setIsTransitioning] = React.useState(false);
@@ -86,7 +82,7 @@ const Shop = () => {
 
       const fetchId = requestAnimationFrame(() => {
         console.log("[Shop] Fetching with params:", currentParams);
-        
+
         // Start fade out animation before fetching
         setIsTransitioning(true);
         Animated.timing(fadeAnim, {
@@ -117,14 +113,6 @@ const Shop = () => {
       setIsInitialized(true);
     }
   }, [filters]);
-
-  // Xử lý toggle yêu thích
-  const handleToggleFavorite = React.useCallback(
-    (id: number) => {
-      toggleWishlist(id);
-    },
-    [toggleWishlist]
-  );
 
   // Reset search
   const resetSearch = React.useCallback(() => {
@@ -164,14 +152,9 @@ const Shop = () => {
   // Memoize renderItem for better performance
   const renderItem = React.useCallback(
     ({ item }: { item: any }) => (
-      <ProductCard
-        product={item}
-        isInWishlist={isInWishlist(item.id)}
-        onToggleWishlist={toggleWishlist}
-        formatPrice={formatPrice}
-      />
+      <ProductCard product={item} formatPrice={formatPrice} />
     ),
-    [isInWishlist, toggleWishlist, formatPrice]
+    [formatPrice]
   );
 
   return (

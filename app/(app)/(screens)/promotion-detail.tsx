@@ -11,14 +11,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePromotion, IPromotion } from "@/contexts/PromotionContext";
 import { useProduct } from "@/contexts/ProductContext";
-import { useWishlist } from "@/contexts/WishlistContext";
 
 const PromotionDetail = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { getPromotions } = usePromotion();
   const { getProductById, formatPrice } = useProduct();
-  const { isInWishlist, toggleWishlist } = useWishlist();
   const [promotion, setPromotion] = useState<IPromotion | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +48,6 @@ const PromotionDetail = () => {
     const product = getProductById(item.productId);
     if (!product) return null;
     const discountedPrice = getDiscountedPrice(product.displayOriginalPrice);
-    const isItemFavorite = isInWishlist(product.id);
 
     return (
       <TouchableOpacity
@@ -69,20 +66,6 @@ const PromotionDetail = () => {
             className="w-full h-full"
             resizeMode="cover"
           />
-          {/* Favorite Icon */}
-          <TouchableOpacity
-            className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-sm"
-            onPress={(e) => {
-              e.stopPropagation();
-              toggleWishlist(product.id);
-            }}
-          >
-            <Ionicons
-              name={isItemFavorite ? "heart" : "heart-outline"}
-              size={25}
-              color={isItemFavorite ? "#e74c3c" : "#666"}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Product Info */}

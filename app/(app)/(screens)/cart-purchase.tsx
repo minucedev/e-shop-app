@@ -181,15 +181,15 @@ const CartPurchase = () => {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View className="flex-row items-center justify-center pt-12 pb-4 px-4">
+      <View className="flex-row items-center justify-center py-4 px-6 bg-white border-b border-gray-100 shadow-sm">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="absolute left-5"
+          className="absolute left-6"
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={26} color="#111827" />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-black">Checkout</Text>
+        <Text className="text-2xl font-bold text-gray-900">Checkout</Text>
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -229,10 +229,10 @@ const CartPurchase = () => {
           {/* COD */}
           <TouchableOpacity
             onPress={() => setSelectedPaymentMethod("COD")}
-            className={`flex-row items-center p-4 rounded-2xl mb-3 ${
+            className={`flex-row items-center p-4 rounded-xl mb-3 ${
               selectedPaymentMethod === "COD"
-                ? "border-2 border-black bg-gray-50"
-                : "border border-gray-300"
+                ? "border-2 border-blue-600 bg-blue-50"
+                : "border border-gray-200 bg-white"
             }`}
             activeOpacity={0.7}
           >
@@ -243,10 +243,16 @@ const CartPurchase = () => {
                   : "ellipse-outline"
               }
               size={24}
-              color={selectedPaymentMethod === "COD" ? "#000" : "#666"}
+              color={selectedPaymentMethod === "COD" ? "#2563eb" : "#9ca3af"}
             />
             <View className="flex-1 ml-3">
-              <Text className="text-base font-bold text-black">
+              <Text
+                className={`text-base font-bold ${
+                  selectedPaymentMethod === "COD"
+                    ? "text-blue-600"
+                    : "text-gray-700"
+                }`}
+              >
                 Cash on Delivery (COD)
               </Text>
             </View>
@@ -255,10 +261,10 @@ const CartPurchase = () => {
           {/* VNPay */}
           <TouchableOpacity
             onPress={() => setSelectedPaymentMethod("VNPAY")}
-            className={`flex-row items-center p-4 rounded-2xl mb-3 ${
+            className={`flex-row items-center p-4 rounded-xl mb-3 ${
               selectedPaymentMethod === "VNPAY"
-                ? "border-2 border-black bg-gray-50"
-                : "border border-gray-300"
+                ? "border-2 border-blue-600 bg-blue-50"
+                : "border border-gray-200 bg-white"
             }`}
             activeOpacity={0.7}
           >
@@ -269,10 +275,18 @@ const CartPurchase = () => {
                   : "ellipse-outline"
               }
               size={24}
-              color={selectedPaymentMethod === "VNPAY" ? "#000" : "#666"}
+              color={selectedPaymentMethod === "VNPAY" ? "#2563eb" : "#9ca3af"}
             />
             <View className="flex-1 ml-3">
-              <Text className="text-base font-bold text-black">VNPay</Text>
+              <Text
+                className={`text-base font-bold ${
+                  selectedPaymentMethod === "VNPAY"
+                    ? "text-blue-600"
+                    : "text-gray-700"
+                }`}
+              >
+                VNPay
+              </Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -331,7 +345,7 @@ const CartPurchase = () => {
           );
         })()}
         <TouchableOpacity
-          className="bg-black rounded-full h-14 items-center justify-center"
+          className="bg-blue-600 rounded-xl h-14 items-center justify-center shadow-lg"
           activeOpacity={0.8}
           onPress={handlePlaceOrder}
           disabled={isPlacingOrder || isLoading}

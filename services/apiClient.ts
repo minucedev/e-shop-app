@@ -274,7 +274,20 @@ class ApiClient {
       ) {
         // Không log lỗi này ra console
       } else {
-        console.error(`API Error [${endpoint}]:`, error);
+        // Special handling for expected errors that shouldn't be logged
+        const expectedErrors = [
+          "haven't reviewed",
+          "already reviewed",
+          "already in wishlist",
+        ];
+        const isExpectedError = expectedErrors.some((msg) =>
+          error.message?.toLowerCase().includes(msg.toLowerCase())
+        );
+
+        // Only log unexpected errors
+        if (!isExpectedError) {
+          console.error(`API Error [${endpoint}]:`, error);
+        }
       }
 
       // Re-throw the error with a clear message so the caller can handle it.

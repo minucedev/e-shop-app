@@ -24,7 +24,8 @@ npm install
 npm run update-ip
 
 # 3. Khởi động app
-npm start
+Cách 1: npm start
+Cách 2: npx expo start
 # Quét QR code bằng Expo Go app
 ```
 

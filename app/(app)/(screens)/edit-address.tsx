@@ -530,25 +530,42 @@ const EditAddress = () => {
               {/* Action Buttons */}
               <View className="px-5 py-4 border-t border-gray-100 bg-white">
                 {modalMode === "edit" && editingAddress && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setShowModal(false);
-                      handleDeleteAddress(editingAddress);
-                    }}
-                    className="bg-red-50 rounded-xl py-3 items-center mb-3 border border-red-200"
-                    disabled={isSaving}
-                  >
-                    <View className="flex-row items-center">
-                      <Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color="#DC2626"
-                      />
-                      <Text className="text-red-600 font-semibold text-base ml-2">
-                        Delete Address
+                  <>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowModal(false);
+                        handleDeleteAddress(editingAddress);
+                      }}
+                      className={`rounded-xl py-3 items-center mb-3 border ${
+                        addresses.length <= 1
+                          ? "bg-gray-100 border-gray-200"
+                          : "bg-red-50 border-red-200"
+                      }`}
+                      disabled={isSaving || addresses.length <= 1}
+                    >
+                      <View className="flex-row items-center">
+                        <Ionicons
+                          name="trash-outline"
+                          size={18}
+                          color={addresses.length <= 1 ? "#9CA3AF" : "#DC2626"}
+                        />
+                        <Text
+                          className={`font-semibold text-base ml-2 ${
+                            addresses.length <= 1
+                              ? "text-gray-400"
+                              : "text-red-600"
+                          }`}
+                        >
+                          Delete Address
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    {addresses.length <= 1 && (
+                      <Text className="text-xs text-gray-500 text-center mb-3 -mt-2">
+                        You must have at least one address
                       </Text>
-                    </View>
-                  </TouchableOpacity>
+                    )}
+                  </>
                 )}
 
                 <View className="flex-row">

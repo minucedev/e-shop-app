@@ -116,11 +116,11 @@ const Profile = () => {
           title="Shipping Address"
           onPress={() => router.push("/(app)/(screens)/edit-address")}
         />
-        <OptionItem
+        {/* <OptionItem
           iconName="add-circle-outline"
           title="Create Request"
           onPress={() => console.log("Go to Create Request")}
-        />
+        /> */}
         <OptionItem
           iconName="lock-closed-outline"
           title="Privacy Policy"
