@@ -9,6 +9,7 @@ import {
   Image,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProduct } from "@/contexts/ProductContext";
@@ -144,7 +145,7 @@ const Home = () => {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <StatusBar barStyle="dark-content" />
       {/* Status Bar and Header */}
       <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
@@ -338,7 +339,7 @@ const Home = () => {
         {/* Add space at bottom to avoid bottom navigation overlap */}
         <View className="h-10" />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -6,6 +6,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFullName } from "@/utils/userUtils";
@@ -62,17 +63,13 @@ const Profile = () => {
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center justify-center p-4 bg-white border-b border-gray-200 relative">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="absolute left-4 p-2"
-        >
-          <Ionicons name="arrow-back" size={24} color="#2563eb" />
-        </TouchableOpacity>
-        <Text className="text-lg font-semibold text-gray-900">Profile</Text>
+      <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
+        <Text className="text-3xl font-bold text-gray-900">Profile</Text>
       </View>
+
+      <ScrollView className="flex-1">
 
       {/* User Info Section */}
       <View className="items-center py-6 bg-white border-b border-gray-100 mb-2">
@@ -132,7 +129,8 @@ const Profile = () => {
           onPress={handleLogout}
         />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

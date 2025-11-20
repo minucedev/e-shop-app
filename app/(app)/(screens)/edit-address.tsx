@@ -14,6 +14,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -250,9 +251,9 @@ const EditAddress = () => {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
       {/* Header */}
-      <View className="bg-white pt-12 pb-4 px-5 shadow-sm">
+      <View className="bg-white pb-4 px-5 shadow-sm">
         <View className="flex-row items-center justify-between">
           <TouchableOpacity
             onPress={() => router.back()}
@@ -335,7 +336,7 @@ const EditAddress = () => {
       </ScrollView>
 
       {/* Add New Address Button */}
-      <View className="bg-white px-5 py-4 shadow-lg">
+      <SafeAreaView edges={['bottom']} className="bg-white px-5 py-2 shadow-lg">
         <TouchableOpacity
           className="bg-blue-500 rounded-full py-4 items-center"
           onPress={() => {
@@ -360,7 +361,7 @@ const EditAddress = () => {
             </Text>
           </View>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
 
       {/* Add Address Modal */}
       <Modal
@@ -528,7 +529,7 @@ const EditAddress = () => {
               </ScrollView>
 
               {/* Action Buttons */}
-              <View className="px-5 py-4 border-t border-gray-100 bg-white">
+              <SafeAreaView className="px-5 py-2 border-t border-gray-100 bg-white" edges={['bottom']}>
                 {modalMode === "edit" && editingAddress && (
                   <>
                     <TouchableOpacity
@@ -595,12 +596,12 @@ const EditAddress = () => {
                     )}
                   </TouchableOpacity>
                 </View>
-              </View>
+              </SafeAreaView>
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Animated,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
@@ -158,7 +159,7 @@ const Shop = () => {
   );
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
       <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
         <View className="flex-row items-center justify-between">
@@ -260,7 +261,7 @@ const Shop = () => {
         onClose={() => setShowFilterModal(false)}
         onApply={handleApplyFilters}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

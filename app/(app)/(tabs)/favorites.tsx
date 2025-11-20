@@ -6,6 +6,7 @@ import {
   FlatList,
   Image,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { formatPrice } from "@/contexts/ProductContext";
@@ -95,10 +96,10 @@ const Favorites = () => {
   }, []);
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       {/* Header */}
       <View className="px-6 py-4 bg-white flex-row items-center justify-between border-b border-gray-100 shadow-sm">
-        <Text className="text-2xl font-bold text-gray-900">Favorites</Text>
+        <Text className="text-3xl font-bold text-gray-900">Favorites</Text>
         <TouchableOpacity onPress={handleClearFavorites} activeOpacity={0.7}>
           <Text className="text-red-500 font-semibold text-base">Clear</Text>
         </TouchableOpacity>
@@ -201,7 +202,7 @@ const Favorites = () => {
           />
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

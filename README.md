@@ -29,6 +29,13 @@ Cách 2: npx expo start
 # Quét QR code bằng Expo Go app
 ```
 
+**Chạy development build**
+```bash
+# 1. Khởi chạy
+npx expo start --dev-client
+# 2. Bật app đã cài đặt và quét mã QR
+```
+
 **Lưu ý:**
 
 - ✅ Backend phải chạy trên cổng 8081

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -177,7 +178,7 @@ const CartPurchase = () => {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
@@ -296,7 +297,7 @@ const CartPurchase = () => {
       </ScrollView>
 
       {/* Total and Continue Button - Fixed at bottom */}
-      <View className="px-5 pb-8 pt-4 bg-white border-t border-gray-100">
+      <View className="px-5 pb-4 pt-4 bg-white border-t border-gray-100">
         {/* Total calculation */}
         {(() => {
           // Calculate subtotal from cart items
@@ -357,7 +358,7 @@ const CartPurchase = () => {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

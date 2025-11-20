@@ -9,6 +9,7 @@ import {
   ScrollView,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFullName } from "@/utils/userUtils";
 import { validatePhone } from "@/utils/authUtils";
@@ -95,7 +96,7 @@ const EditProfile = () => {
   return (
     <ScrollView className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200">
+      <SafeAreaView className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200" edges={['top']}>
         <TouchableOpacity onPress={() => router.back()} className="p-2">
           <Ionicons name="arrow-back" size={24} color="#2563eb" />
         </TouchableOpacity>
@@ -113,7 +114,7 @@ const EditProfile = () => {
             {isLoading ? "Saving..." : "Save"}
           </Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
 
       {/* Avatar Section */}
       <View className="items-center py-6 bg-white border-b border-gray-100 mb-4">

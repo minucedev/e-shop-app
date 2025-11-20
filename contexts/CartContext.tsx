@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
+import { useRouter } from "expo-router";
+import { useAuth } from "./AuthContext";
 import {
   getCart as fetchCart,
   addToCart as addToCartApi,
@@ -38,10 +40,35 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
+  const { signOut } = useAuth();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingItems, setUpdatingItems] = useState<Set<number>>(new Set());
+
+  // Helper function to handle auth errors
+  const handleAuthError = async (err: any) => {
+    if (err.message?.includes("Access denied") || err.message?.includes("AUTHORIZATION_DENIED")) {
+      console.log("Auth error detected, signing out and redirecting to login");
+      Toast.show({
+        type: "error",
+        text1: "Phiên đăng nhập hết hạn",
+        text2: "Vui lòng đăng nhập lại",
+      });
+      
+      // Sign out to clear tokens
+      await signOut();
+      
+      // Clear cart state
+      setCart(null);
+      
+      // Redirect to login
+      router.replace("/(auth)/login");
+      return true; // Return true if handled
+    }
+    return false; // Return false if not handled
+  };
 
   // Derived values
   const cartItems = cart?.items || [];
@@ -58,6 +85,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err: any) {
       console.error("Failed to fetch cart:", err);
       setError(err.message || "Failed to load cart");
+      
+      // Handle auth errors
+      if (await handleAuthError(err)) {
+        return; // Don't show additional error if redirected
+      }
+      
       // Don't show toast on initial load failure
     } finally {
       setIsLoading(false);
@@ -86,6 +119,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       });
     } catch (err: any) {
       console.error("Failed to add to cart:", err);
+      
+      // Handle auth errors
+      if (await handleAuthError(err)) {
+        return;
+      }
+      
       Toast.show({
         type: "error",
         text1: "Lỗi",
@@ -137,6 +176,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       });
     } catch (err: any) {
       console.error("Failed to remove from cart:", err);
+
+      // Handle auth errors
+      if (await handleAuthError(err)) {
+        return;
+      }
 
       // Revert optimistic update by refreshing from server
       await refreshCart();
@@ -204,6 +248,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err: any) {
       console.error("Failed to update quantity:", err);
 
+      // Handle auth errors
+      if (await handleAuthError(err)) {
+        return;
+      }
+
       // Revert optimistic update by refreshing from server
       await refreshCart();
 
@@ -236,6 +285,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       });
     } catch (err: any) {
       console.error("Failed to clear cart:", err);
+
+      // Handle auth errors
+      if (await handleAuthError(err)) {
+        return;
+      }
+
       Toast.show({
         type: "error",
         text1: "Lỗi",

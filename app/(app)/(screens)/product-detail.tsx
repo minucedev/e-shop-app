@@ -10,6 +10,7 @@ import {
   FlatList,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -324,7 +325,7 @@ const ProductDetail = () => {
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="bg-white border-b border-gray-200">
+      <SafeAreaView className="bg-white border-b border-gray-200" edges={['top']}>
         <View className="flex-row items-center justify-between px-4 py-3">
           <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
             <Ionicons name="arrow-back" size={24} color="#222" />
@@ -343,7 +344,7 @@ const ProductDetail = () => {
             />
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Image Gallery Slider */}
@@ -763,7 +764,7 @@ const ProductDetail = () => {
       />
 
       {/* Bottom Action Bar */}
-      <View className="px-4 py-4 bg-white border-t border-gray-200">
+      <SafeAreaView className="px-4 py-2 bg-white border-t border-gray-200" edges={['bottom']}>
         <TouchableOpacity
           className={`py-4 rounded-xl ${
             selectedVariation && selectedVariation.availableQuantity > 0
@@ -783,7 +784,7 @@ const ProductDetail = () => {
                 : "Thêm vào giỏ hàng"}
           </Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     </View>
   );
 };
