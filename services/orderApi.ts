@@ -110,7 +110,69 @@ const getOrderHistory = (
   );
 };
 
+// Get order by code from order history
+const getOrderByCode = async (orderCode: string): Promise<ApiResponse<Order>> => {
+  try {
+    // Fetch recent orders (first page with larger size to catch recent order)
+    const response = await apiClient.get<OrderHistoryResponse>(
+      `/orders?page=0&size=20`
+    );
+
+    if (response.success && response.data) {
+      // Find order with matching code
+      const order = response.data.content.find(
+        (o) => o.orderCode === orderCode
+      );
+
+      if (order) {
+        return {
+          success: true,
+          data: order,
+        };
+      } else {
+        return {
+          success: false,
+          error: "Order not found",
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: response.error || "Failed to fetch order",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "An error occurred",
+    };
+  }
+};
+
+// Verify/Confirm VNPay payment for manual completion
+const confirmVnpayPayment = async (
+  orderCode: string
+): Promise<ApiResponse<{ message: string }>> => {
+  try {
+    // This endpoint should trigger backend to check payment status with VNPay
+    // and update order status accordingly
+    const response = await apiClient.post<{ message: string }>(
+      `/orders/${orderCode}/confirm-payment`,
+      {}
+    );
+
+    return response;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to confirm payment",
+    };
+  }
+};
+
 export const orderApi = {
   createOrder,
   getOrderHistory,
+  getOrderByCode,
+  confirmVnpayPayment,
 };

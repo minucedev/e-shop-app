@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,95 +11,152 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { WebView } from "react-native-webview";
 import type { WebViewNavigation } from "react-native-webview";
+import { useCart } from "@/contexts/CartContext";
+import { orderApi } from "@/services/orderApi";
 
 const PaymentWebView = () => {
   const router = useRouter();
   const { paymentUrl, orderCode } = useLocalSearchParams();
+  const { clearCart } = useCart();
   const webViewRef = useRef<WebView>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUrl, setCurrentUrl] = useState("");
   const [hasHandledCallback, setHasHandledCallback] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState("");
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Injected JavaScript to intercept navigation
-  const injectedJavaScript = `
-    (function() {
-      // Override window.location to intercept redirects
-      var originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-        get: function() {
-          return originalLocation;
-        },
-        set: function(value) {
-          if (typeof value === 'string' && value.startsWith('myapp://callback')) {
-            // Send message to React Native
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'CALLBACK_URL',
-              url: value
-            }));
-            return;
-          }
-          originalLocation = value;
-        }
-      });
+  // Start polling backend for payment status
+  const startPaymentStatusPolling = () => {
+    if (isPolling || !orderCode) return;
 
-      // Also intercept href changes
-      document.addEventListener('click', function(e) {
-        var target = e.target;
-        while (target && target.tagName !== 'A') {
-          target = target.parentElement;
-        }
-        if (target && target.href && target.href.startsWith('myapp://callback')) {
-          e.preventDefault();
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'CALLBACK_URL',
-            url: target.href
-          }));
-        }
-      });
+    setIsPolling(true);
+    const startTime = Date.now();
+    const maxDuration = 2 * 60 * 1000; // 2 minutes
 
-      // Check current URL on load
-      if (window.location.href && window.location.href.startsWith('myapp://callback')) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'CALLBACK_URL',
-          url: window.location.href
-        }));
-      }
-    })();
-    true; // Required for injectedJavaScript
-  `;
+    if (__DEV__) {
+      console.log("🔄 Starting payment status polling for order:", orderCode);
+    }
 
-  // Handle messages from WebView
-  const handleMessage = (event: any) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-
-      if (__DEV__) {
-        console.log("📨 Message from WebView:", data);
-      }
-
-      if (data.type === "CALLBACK_URL") {
-        if (__DEV__) {
-          console.log("✅ Received callback URL from WebView:", data.url);
-        }
-
-        if (hasHandledCallback) {
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        // Check if timeout reached
+        if (Date.now() - startTime > maxDuration) {
           if (__DEV__) {
-            console.log("⚠️ Already handled, skipping...");
+            console.log("⏱️ Polling timeout reached");
           }
+          stopPolling();
+          Alert.alert(
+            "Hết thời gian chờ",
+            "Vui lòng kiểm tra lại trạng thái đơn hàng trong 'Đơn hàng của tôi'",
+            [{ text: "OK", onPress: () => router.back() }]
+          );
           return;
         }
 
-        setHasHandledCallback(true);
-        handleCallbackUrl(data.url);
+        // Check order status
+        const order = await orderApi.getOrderByCode(orderCode as string);
+        
+        if (__DEV__) {
+          console.log("📊 Order status:", order?.paymentStatus);
+        }
+
+        // Check if payment completed
+        if (order && (
+          order.paymentStatus === "PAID" || 
+          order.paymentStatus === "SUCCESS"
+        )) {
+          stopPolling();
+          
+          if (__DEV__) {
+            console.log("✅ Payment successful via polling");
+          }
+
+          await clearCart();
+          router.replace({
+            pathname: "/(app)/(screens)/payment-success",
+            params: {
+              orderCode: orderCode as string,
+              transactionNo: "",
+              amount: "",
+              bankCode: "",
+            },
+          });
+        } else if (order && (
+          order.paymentStatus === "FAILED" || 
+          order.paymentStatus === "CANCELLED"
+        )) {
+          stopPolling();
+          
+          if (__DEV__) {
+            console.log("❌ Payment failed via polling");
+          }
+
+          router.replace({
+            pathname: "/(app)/(screens)/payment-failure",
+            params: {
+              orderCode: orderCode as string,
+              responseCode: "24",
+              message: "Giao dịch không thành công",
+            },
+          });
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.error("❌ Error polling payment status:", error);
+        }
       }
-    } catch (error) {
+    }, 3000); // Poll every 3 seconds
+  };
+
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    setIsPolling(false);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, []);
+
+  // MAIN LOGIC - Handle navigation state changes
+  const handleNavigationStateChange = (navState: WebViewNavigation) => {
+    const { url } = navState;
+    setCurrentUrl(url);
+
+    if (__DEV__) {
+      console.log("🔍 Navigation URL:", url);
+    }
+
+    // Start polling when user reaches OTP confirmation page
+    if ((url.includes('/Confirm.html') || url.includes('/Transaction/Confirm')) && !isPolling) {
       if (__DEV__) {
-        console.error("❌ Error parsing WebView message:", error);
+        console.log("📱 On OTP confirmation page - starting payment status polling");
       }
+      startPaymentStatusPolling();
+    }
+
+    // Still check for direct callback (in case VNPay fixes their sandbox)
+    if (url.startsWith("myapp://") || url.includes('vnp_ResponseCode=')) {
+      if (hasHandledCallback) {
+        return;
+      }
+
+      if (__DEV__) {
+        console.log("✅ Detected callback URL in navigation:", url);
+      }
+
+      setHasHandledCallback(true);
+      stopPolling(); // Stop polling if we get direct callback
+      handleCallbackUrl(url);
     }
   };
 
-  // Handle should start load - INTERCEPT before loading
+  // CRITICAL: Intercept callback URL before WebView tries to load it
   const handleShouldStartLoadWithRequest = (request: any): boolean => {
     const { url } = request;
 
@@ -107,24 +164,35 @@ const PaymentWebView = () => {
       console.log("🔍 Should load URL:", url);
     }
 
-    // Check if the URL is our return URL (deep link)
-    if (url.startsWith("myapp://callback")) {
+    // Intercept any myapp:// scheme
+    if (url.startsWith("myapp://")) {
       if (__DEV__) {
-        console.log("✅ Detected callback URL, intercepting...");
+        console.log("✅ Intercepting myapp:// scheme:", url);
       }
 
-      // Prevent duplicate handling
-      if (hasHandledCallback) {
-        if (__DEV__) {
-          console.log("⚠️ Already handled, skipping...");
-        }
-        return false;
+      if (!hasHandledCallback) {
+        setHasHandledCallback(true);
+        stopPolling();
+        handleCallbackUrl(url);
       }
 
-      setHasHandledCallback(true);
-      handleCallbackUrl(url);
+      // Don't let WebView try to load this URL
+      return false;
+    }
 
-      // Prevent WebView from trying to load this URL
+    // Intercept any URL with VNPay response parameters
+    if (url.includes('vnp_ResponseCode=') || url.includes('vnp_TransactionNo=')) {
+      if (__DEV__) {
+        console.log("✅ Intercepting URL with VNPay parameters:", url);
+      }
+
+      if (!hasHandledCallback) {
+        setHasHandledCallback(true);
+        stopPolling();
+        handleCallbackUrl(url);
+      }
+
+      // Don't let WebView try to load this URL
       return false;
     }
 
@@ -132,36 +200,51 @@ const PaymentWebView = () => {
     return true;
   };
 
-  // Handle callback URL parsing and navigation
-  const handleCallbackUrl = (url: string) => {
+  // Parse callback URL and navigate to result screen
+  const handleCallbackUrl = async (url: string) => {
     try {
-      // Parse query parameters from URL
+      if (__DEV__) {
+        console.log("💳 Processing callback URL:", url);
+      }
+
+      // Parse URL - convert custom scheme to standard URL for parsing
       const urlObj = new URL(url.replace("myapp://", "https://dummy/"));
       const params = urlObj.searchParams;
 
-      // Get VNPay response code
+      // Extract VNPay response parameters
       const vnpResponseCode = params.get("vnp_ResponseCode");
       const vnpTransactionNo = params.get("vnp_TransactionNo");
       const vnpAmount = params.get("vnp_Amount");
       const vnpBankCode = params.get("vnp_BankCode");
-      const vnpOrderInfo = params.get("vnp_OrderInfo");
 
       if (__DEV__) {
         console.log("💳 VNPay Response:", {
-          vnpResponseCode,
-          vnpTransactionNo,
-          vnpAmount,
-          vnpBankCode,
-          vnpOrderInfo,
+          responseCode: vnpResponseCode,
+          transactionNo: vnpTransactionNo,
+          amount: vnpAmount,
+          bankCode: vnpBankCode,
         });
+      }
+
+      // Check if we got the response code
+      if (!vnpResponseCode) {
+        if (__DEV__) {
+          console.error("❌ No vnp_ResponseCode found in URL");
+        }
+        Alert.alert("Lỗi", "Không thể xác định kết quả thanh toán");
+        router.back();
+        return;
       }
 
       // Navigate based on response code
       if (vnpResponseCode === "00") {
-        // Success
+        // Payment successful - Clear cart first
+        await clearCart();
+
         if (__DEV__) {
-          console.log("✅ Payment successful, navigating to success screen...");
+          console.log("✅ Payment successful, cart cleared");
         }
+
         router.replace({
           pathname: "/(app)/(screens)/payment-success",
           params: {
@@ -172,46 +255,29 @@ const PaymentWebView = () => {
           },
         });
       } else {
-        // Failure
+        // Payment failed
         if (__DEV__) {
-          console.log("❌ Payment failed, navigating to failure screen...");
+          console.log("❌ Payment failed with code:", vnpResponseCode);
         }
+
         router.replace({
           pathname: "/(app)/(screens)/payment-failure",
           params: {
             orderCode: orderCode as string,
-            responseCode: vnpResponseCode || "Unknown",
-            message: getErrorMessage(vnpResponseCode || ""),
+            responseCode: vnpResponseCode,
+            message: getErrorMessage(vnpResponseCode),
           },
         });
       }
     } catch (error) {
-      console.error("❌ Error handling callback:", error);
+      console.error("❌ Error handling callback URL:", error);
       Alert.alert("Lỗi", "Không thể xử lý kết quả thanh toán");
       router.back();
     }
   };
 
-  // Handle navigation state changes in WebView (for tracking only)
-  const handleNavigationStateChange = (navState: WebViewNavigation) => {
-    const { url } = navState;
-    setCurrentUrl(url);
 
-    if (__DEV__) {
-      console.log("🔍 Navigation state changed:", url);
-    }
-
-    // Also check URL in navigation state (backup method)
-    if (url.startsWith("myapp://callback") && !hasHandledCallback) {
-      if (__DEV__) {
-        console.log("✅ Detected callback in navigation state");
-      }
-      setHasHandledCallback(true);
-      handleCallbackUrl(url);
-    }
-  };
-
-  // Get error message based on VNPay response code
+  // Get VNPay error message based on response code
   const getErrorMessage = (code: string): string => {
     const errorMessages: { [key: string]: string } = {
       "07": "Trừ tiền thành công. Giao dịch bị nghi ngờ (liên quan tới lừa đảo, giao dịch bất thường).",
@@ -233,6 +299,7 @@ const PaymentWebView = () => {
     );
   };
 
+  // Loading handlers
   const handleLoadStart = () => {
     setIsLoading(true);
   };
@@ -241,21 +308,52 @@ const PaymentWebView = () => {
     setIsLoading(false);
   };
 
+  // Error handler - handle WebView errors
   const handleError = (syntheticEvent: any) => {
     const { nativeEvent } = syntheticEvent;
-    console.error("WebView error:", nativeEvent);
+
+    if (__DEV__) {
+      console.error("❌ WebView error:", nativeEvent);
+      console.error("Error details:", {
+        url: nativeEvent.url,
+        code: nativeEvent.code,
+        description: nativeEvent.description,
+      });
+    }
+
+    // If error happens on callback URL or VNPay result URL, try to parse it anyway
+    if (nativeEvent.url && 
+        (nativeEvent.url.startsWith("myapp://") || 
+         nativeEvent.url.includes('vnp_ResponseCode='))) {
+      if (__DEV__) {
+        console.log("🔍 Error on payment URL, attempting to parse:", nativeEvent.url);
+      }
+
+      if (!hasHandledCallback) {
+        setHasHandledCallback(true);
+        stopPolling();
+        handleCallbackUrl(nativeEvent.url);
+      }
+      return;
+    }
+
+    // Show error alert for other errors
     Alert.alert(
       "Lỗi",
       "Không thể tải trang thanh toán. Vui lòng thử lại sau.",
       [
         {
           text: "OK",
-          onPress: () => router.back(),
+          onPress: () => {
+            stopPolling();
+            router.back();
+          },
         },
       ]
     );
   };
 
+  // Validate payment URL
   if (!paymentUrl) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
@@ -271,6 +369,7 @@ const PaymentWebView = () => {
       </View>
     );
   }
+
 
   return (
     <View className="flex-1 bg-white">
@@ -313,14 +412,12 @@ const PaymentWebView = () => {
         </View>
       )}
 
-      {/* WebView */}
+      {/* WebView - ENHANCED CONFIG */}
       <WebView
         ref={webViewRef}
         source={{ uri: paymentUrl as string }}
         onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
         onNavigationStateChange={handleNavigationStateChange}
-        onMessage={handleMessage}
-        injectedJavaScript={injectedJavaScript}
         onLoadStart={handleLoadStart}
         onLoadEnd={handleLoadEnd}
         onError={handleError}
@@ -329,15 +426,22 @@ const PaymentWebView = () => {
         domStorageEnabled={true}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
-        mixedContentMode="always"
         style={{ flex: 1 }}
       />
 
-      {/* Debug info - Remove in production */}
+      {/* Debug info - Development only */}
       {__DEV__ && (
-        <View className="absolute bottom-0 left-0 right-0 bg-black/80 p-2">
-          <Text className="text-white text-xs" numberOfLines={1}>
-            Current URL: {currentUrl}
+        <View className="absolute bottom-0 left-0 right-0 bg-black/90 p-3">
+          <Text className="text-white text-xs font-bold mb-1">
+            Debug Info:
+          </Text>
+          <Text className="text-white text-xs" numberOfLines={2}>
+            URL: {currentUrl}
+          </Text>
+          <Text className="text-yellow-400 text-xs mt-1">
+            {isPolling ? "🔄 Polling payment status..." : 
+             hasHandledCallback ? "✅ Payment processed" : 
+             "⏳ Waiting..."}
           </Text>
         </View>
       )}
