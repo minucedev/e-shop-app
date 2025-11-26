@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +22,7 @@ import {
   ShippingInfo,
   PaymentInfo,
 } from "@/services/orderApi";
+import { voucherApi, DiscountCalculation } from "@/services/voucherApi";
 
 const CartPurchase = () => {
   const router = useRouter();
@@ -39,6 +41,15 @@ const CartPurchase = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     "COD" | "VNPAY"
   >("COD");
+
+  // Voucher states
+  const [voucherCode, setVoucherCode] = useState("");
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
+  const [voucherError, setVoucherError] = useState("");
+  const [discountInfo, setDiscountInfo] = useState<DiscountCalculation | null>(
+    null
+  );
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState("");
 
   useEffect(() => {
     const fetchDefaultAddress = async () => {
@@ -65,6 +76,55 @@ const CartPurchase = () => {
 
     fetchDefaultAddress();
   }, [user]);
+
+  // Apply voucher
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      setVoucherError("Vui lòng nhập mã giảm giá");
+      return;
+    }
+
+    setIsApplyingVoucher(true);
+    setVoucherError("");
+
+    try {
+      const orderItems = parsedCartItems.map((item: any) => ({
+        productVariationId: item.productVariationId,
+        quantity: item.quantity,
+      }));
+
+      const response = await voucherApi.calculateDiscount({
+        orderItems,
+        voucherCode: voucherCode.trim().toUpperCase(),
+      });
+
+      setDiscountInfo(response);
+      setAppliedVoucherCode(voucherCode.trim().toUpperCase());
+      setVoucherError("");
+      
+      if (__DEV__) {
+        console.log("✅ Voucher applied:", response);
+      }
+    } catch (error: any) {
+      setVoucherError(error.message || "Mã giảm giá không hợp lệ");
+      setDiscountInfo(null);
+      setAppliedVoucherCode("");
+      
+      if (__DEV__) {
+        console.error("❌ Voucher error:", error);
+      }
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
+  // Remove voucher
+  const handleRemoveVoucher = () => {
+    setVoucherCode("");
+    setAppliedVoucherCode("");
+    setDiscountInfo(null);
+    setVoucherError("");
+  };
 
   const handlePlaceOrder = async () => {
     if (!user || !defaultAddress) {
@@ -110,6 +170,7 @@ const CartPurchase = () => {
         paymentInfo,
         note: "Đơn hàng từ ứng dụng mobile",
         returnUrl: "myapp://callback",
+        voucherCode: appliedVoucherCode || undefined, // Include voucher code if applied
       };
 
       // Call create order API
@@ -292,6 +353,90 @@ const CartPurchase = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Voucher Section */}
+        <View className="px-5 mt-6">
+          <Text className="text-xl font-bold text-black mb-4">
+            Mã giảm giá
+          </Text>
+
+          {appliedVoucherCode ? (
+            /* Applied Voucher */
+            <View className="bg-green-50 border border-green-200 rounded-xl p-4">
+              <View className="flex-row items-center justify-between mb-2">
+                <View className="flex-row items-center flex-1">
+                  <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
+                  <Text className="text-green-700 font-bold text-base ml-2">
+                    {appliedVoucherCode}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={handleRemoveVoucher}
+                  className="ml-2"
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close-circle" size={24} color="#16a34a" />
+                </TouchableOpacity>
+              </View>
+              {discountInfo && (
+                <View>
+                  <Text className="text-green-600 text-sm">
+                    Giảm {discountInfo.voucherDiscount.toLocaleString("vi-VN")}₫
+                  </Text>
+                  {discountInfo.voucherType === "PERCENTAGE" && (
+                    <Text className="text-green-600 text-xs mt-1">
+                      ({discountInfo.voucherValue}% off)
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+          ) : (
+            /* Voucher Input */
+            <View>
+              <View className="flex-row gap-2 mb-2">
+                <TextInput
+                  className="flex-1 h-12 border border-gray-300 rounded-xl px-4 bg-white text-base text-gray-900"
+                  placeholder="Nhập mã giảm giá"
+                  placeholderTextColor="#9ca3af"
+                  value={voucherCode}
+                  onChangeText={(text) => {
+                    setVoucherCode(text.toUpperCase());
+                    setVoucherError("");
+                  }}
+                  autoCapitalize="characters"
+                  editable={!isApplyingVoucher}
+                />
+                <TouchableOpacity
+                  onPress={handleApplyVoucher}
+                  disabled={isApplyingVoucher || !voucherCode.trim()}
+                  className={`h-12 px-6 rounded-xl items-center justify-center ${
+                    isApplyingVoucher || !voucherCode.trim()
+                      ? "bg-gray-300"
+                      : "bg-blue-600"
+                  }`}
+                  activeOpacity={0.7}
+                >
+                  {isApplyingVoucher ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text className="text-white font-bold text-base">
+                      Áp dụng
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {voucherError ? (
+                <View className="flex-row items-center mt-1">
+                  <Ionicons name="alert-circle" size={16} color="#ef4444" />
+                  <Text className="text-red-500 text-sm ml-1">
+                    {voucherError}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
+
         {/* Spacer for bottom button */}
         <View className="h-20" />
       </ScrollView>
@@ -311,8 +456,11 @@ const CartPurchase = () => {
           // Fixed shipping fee
           const shippingFee = 30000;
 
-          // Total = Subtotal + Shipping
-          const total = subtotal + shippingFee;
+          // Discount amount
+          const discountAmount = discountInfo?.voucherDiscount || 0;
+
+          // Total = Subtotal + Shipping - Discount
+          const total = subtotal + shippingFee - discountAmount;
 
           // Format VND
           const formatVND = (amount: number) => {
@@ -336,9 +484,17 @@ const CartPurchase = () => {
                   {formatVND(shippingFee)}
                 </Text>
               </View>
+              {discountAmount > 0 && (
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="text-base text-green-600">Giảm giá</Text>
+                  <Text className="text-base font-semibold text-green-600">
+                    -{formatVND(discountAmount)}
+                  </Text>
+                </View>
+              )}
               <View className="flex-row justify-between items-center mb-2 pt-2 border-t border-gray-200">
                 <Text className="text-lg font-bold text-black">Tổng cộng</Text>
-                <Text className="text-lg font-bold text-black">
+                <Text className="text-lg font-bold text-red-600">
                   {formatVND(total)}
                 </Text>
               </View>

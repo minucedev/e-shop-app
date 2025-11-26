@@ -60,6 +60,7 @@ const ProductDetail = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVariationDropdownOpen, setIsVariationDropdownOpen] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isSpecsExpanded, setIsSpecsExpanded] = useState(false);
 
   // Review states
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -704,11 +705,18 @@ const ProductDetail = () => {
                 Thông số kỹ thuật
               </Text>
               <View className="bg-gray-50 rounded-xl p-4">
-                {product.attributes.map((attr, index) => (
+                {(isSpecsExpanded
+                  ? product.attributes
+                  : product.attributes.slice(0, 5)
+                ).map((attr, index) => (
                   <View
                     key={attr.id}
                     className={`flex-row py-3 ${
-                      index < product.attributes.length - 1
+                      index <
+                      (isSpecsExpanded
+                        ? product.attributes.length
+                        : Math.min(5, product.attributes.length)) -
+                        1
                         ? "border-b border-gray-200"
                         : ""
                     }`}
@@ -720,6 +728,23 @@ const ProductDetail = () => {
                   </View>
                 ))}
               </View>
+              {product.attributes.length > 5 && (
+                <TouchableOpacity
+                  onPress={() => setIsSpecsExpanded(!isSpecsExpanded)}
+                  className="mt-2 py-2 items-center"
+                >
+                  <View className="flex-row items-center">
+                    <Text className="text-blue-600 font-medium mr-1">
+                      {isSpecsExpanded ? "Thu gọn" : "Xem thêm"}
+                    </Text>
+                    <Ionicons
+                      name={isSpecsExpanded ? "chevron-up" : "chevron-down"}
+                      size={16}
+                      color="#2563eb"
+                    />
+                  </View>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
