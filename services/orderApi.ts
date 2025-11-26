@@ -111,7 +111,9 @@ const getOrderHistory = (
 };
 
 // Get order by code from order history
-const getOrderByCode = async (orderCode: string): Promise<ApiResponse<Order>> => {
+const getOrderByCode = async (
+  orderCode: string
+): Promise<ApiResponse<Order>> => {
   try {
     // Fetch recent orders (first page with larger size to catch recent order)
     const response = await apiClient.get<OrderHistoryResponse>(

@@ -49,20 +49,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Helper function to handle auth errors
   const handleAuthError = async (err: any) => {
-    if (err.message?.includes("Access denied") || err.message?.includes("AUTHORIZATION_DENIED")) {
+    if (
+      err.message?.includes("Access denied") ||
+      err.message?.includes("AUTHORIZATION_DENIED")
+    ) {
       console.log("Auth error detected, signing out and redirecting to login");
       Toast.show({
         type: "error",
         text1: "Phiên đăng nhập hết hạn",
         text2: "Vui lòng đăng nhập lại",
       });
-      
+
       // Sign out to clear tokens
       await signOut();
-      
+
       // Clear cart state
       setCart(null);
-      
+
       // Redirect to login
       router.replace("/(auth)/login");
       return true; // Return true if handled
@@ -85,12 +88,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err: any) {
       console.error("Failed to fetch cart:", err);
       setError(err.message || "Failed to load cart");
-      
+
       // Handle auth errors
       if (await handleAuthError(err)) {
         return; // Don't show additional error if redirected
       }
-      
+
       // Don't show toast on initial load failure
     } finally {
       setIsLoading(false);
@@ -119,12 +122,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       });
     } catch (err: any) {
       console.error("Failed to add to cart:", err);
-      
+
       // Handle auth errors
       if (await handleAuthError(err)) {
         return;
       }
-      
+
       Toast.show({
         type: "error",
         text1: "Lỗi",

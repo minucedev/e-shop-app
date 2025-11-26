@@ -19,6 +19,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi, Address } from "@/services/authApi";
+import { VietnamAddressPicker } from "@/components/VietnamAddressPicker";
+import { vietnamAddressApi } from "@/services/vietnamAddressApi";
 
 const ADDRESS_TYPES = ["HOME", "WORK", "OTHER"] as const;
 
@@ -43,6 +45,11 @@ const EditAddress = () => {
     isDefault: false,
     addressType: "HOME" as "HOME" | "WORK" | "OTHER",
   });
+
+  // Debug formData changes
+  useEffect(() => {
+    console.log("🔍 FormData updated:", formData);
+  }, [formData]);
 
   // Fetch addresses from API
   const fetchAddresses = async () => {
@@ -251,7 +258,7 @@ const EditAddress = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
       {/* Header */}
       <View className="bg-white pb-4 px-5 shadow-sm">
         <View className="flex-row items-center justify-between">
@@ -336,7 +343,7 @@ const EditAddress = () => {
       </ScrollView>
 
       {/* Add New Address Button */}
-      <SafeAreaView edges={['bottom']} className="bg-white px-5 py-2 shadow-lg">
+      <SafeAreaView edges={["bottom"]} className="bg-white px-5 py-2 shadow-lg">
         <TouchableOpacity
           className="bg-blue-500 rounded-full py-4 items-center"
           onPress={() => {
@@ -412,62 +419,47 @@ const EditAddress = () => {
                   paddingVertical: 20,
                 }}
               >
+                {/* Vietnam Address Picker */}
+                <VietnamAddressPicker
+                  selectedProvince={formData.city}
+                  selectedDistrict={formData.district}
+                  selectedWard={formData.ward}
+                  onProvinceChange={(province, provinceCode) => {
+                    console.log("✅ onProvinceChange:", province, provinceCode);
+                    setFormData({
+                      ...formData,
+                      city: province,
+                      district: "", // Reset district
+                      ward: "", // Reset ward
+                      postalCode:
+                        vietnamAddressApi.getPostalCodeByProvince(provinceCode),
+                    });
+                  }}
+                  onDistrictChange={(district) => {
+                    console.log("✅ onDistrictChange:", district);
+                    setFormData({
+                      ...formData,
+                      district,
+                      ward: "", // Reset ward when district changes
+                    });
+                  }}
+                  onWardChange={(ward) => {
+                    console.log("✅ onWardChange:", ward);
+                    setFormData({ ...formData, ward });
+                  }}
+                />
+
                 {/* Street Address */}
                 <View className="mb-4">
                   <Text className="text-sm font-medium text-gray-700 mb-2">
-                    Street Address *
+                    Số nhà, Tên đường *
                   </Text>
                   <TextInput
                     className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900"
-                    placeholder="e.g., 123 Nguyen Van Cu"
+                    placeholder="Ví dụ: 123 Nguyễn Văn Cừ"
                     value={formData.streetAddress}
                     onChangeText={(text) =>
                       setFormData({ ...formData, streetAddress: text })
-                    }
-                  />
-                </View>
-
-                {/* Ward */}
-                <View className="mb-4">
-                  <Text className="text-sm font-medium text-gray-700 mb-2">
-                    Ward *
-                  </Text>
-                  <TextInput
-                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900"
-                    placeholder="e.g., Phường 4"
-                    value={formData.ward}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, ward: text })
-                    }
-                  />
-                </View>
-
-                {/* District */}
-                <View className="mb-4">
-                  <Text className="text-sm font-medium text-gray-700 mb-2">
-                    District *
-                  </Text>
-                  <TextInput
-                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900"
-                    placeholder="e.g., Quận 5"
-                    value={formData.district}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, district: text })
-                    }
-                  />
-                </View>
-
-                {/* City */}
-                <View className="mb-4">
-                  <Text className="text-sm font-medium text-gray-700 mb-2">
-                    City *
-                  </Text>
-                  <TextInput
-                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900"
-                    placeholder="e.g., TP. Hồ Chí Minh"
-                    value={formData.city}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, city: text })
                     }
                   />
                 </View>
@@ -529,7 +521,10 @@ const EditAddress = () => {
               </ScrollView>
 
               {/* Action Buttons */}
-              <SafeAreaView className="px-5 py-2 border-t border-gray-100 bg-white" edges={['bottom']}>
+              <SafeAreaView
+                className="px-5 py-2 border-t border-gray-100 bg-white"
+                edges={["bottom"]}
+              >
                 {modalMode === "edit" && editingAddress && (
                   <>
                     <TouchableOpacity

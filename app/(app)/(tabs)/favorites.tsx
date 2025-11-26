@@ -96,7 +96,7 @@ const Favorites = () => {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       {/* Header */}
       <View className="px-6 py-4 bg-white flex-row items-center justify-between border-b border-gray-100 shadow-sm">
         <Text className="text-3xl font-bold text-gray-900">Favorites</Text>

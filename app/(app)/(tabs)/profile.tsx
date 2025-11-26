@@ -63,72 +63,71 @@ const Profile = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
       {/* Header */}
       <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
         <Text className="text-3xl font-bold text-gray-900">Profile</Text>
       </View>
 
       <ScrollView className="flex-1">
+        {/* User Info Section */}
+        <View className="items-center py-6 bg-white border-b border-gray-100 mb-2">
+          {/* Avatar */}
+          <View className="relative w-32 h-32 items-center justify-center">
+            {/* Các vòng tròn đồng tâm */}
+            <View className="absolute w-32 h-32 rounded-full border border-blue-100"></View>
+            <View className="absolute w-28 h-28 rounded-full border-2 border-blue-200"></View>
+            <Image
+              source={{ uri: userProfile.avatar }}
+              className="w-24 h-24 rounded-full"
+            />
+            {/* Nút Edit */}
+            <TouchableOpacity
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-600 items-center justify-center"
+              onPress={() => router.push("/(app)/(screens)/edit-profile")}
+            >
+              <Ionicons name="pencil-outline" size={16} color="white" />
+            </TouchableOpacity>
+          </View>
 
-      {/* User Info Section */}
-      <View className="items-center py-6 bg-white border-b border-gray-100 mb-2">
-        {/* Avatar */}
-        <View className="relative w-32 h-32 items-center justify-center">
-          {/* Các vòng tròn đồng tâm */}
-          <View className="absolute w-32 h-32 rounded-full border border-blue-100"></View>
-          <View className="absolute w-28 h-28 rounded-full border-2 border-blue-200"></View>
-          <Image
-            source={{ uri: userProfile.avatar }}
-            className="w-24 h-24 rounded-full"
-          />
-          {/* Nút Edit */}
-          <TouchableOpacity
-            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-blue-600 items-center justify-center"
-            onPress={() => router.push("/(app)/(screens)/edit-profile")}
-          >
-            <Ionicons name="pencil-outline" size={16} color="white" />
-          </TouchableOpacity>
+          {/* User Details */}
+          <Text className="text-xl font-bold text-gray-900 mt-4">
+            {userProfile.name}
+          </Text>
+          <Text className="text-base text-gray-700 mt-1">
+            {userProfile.phone}
+          </Text>
+          <Text className="text-base text-gray-700">{userProfile.email}</Text>
         </View>
 
-        {/* User Details */}
-        <Text className="text-xl font-bold text-gray-900 mt-4">
-          {userProfile.name}
-        </Text>
-        <Text className="text-base text-gray-700 mt-1">
-          {userProfile.phone}
-        </Text>
-        <Text className="text-base text-gray-700">{userProfile.email}</Text>
-      </View>
-
-      {/* Options List */}
-      <View className="mt-4">
-        <OptionItem
-          iconName="reader-outline"
-          title="My Order"
-          onPress={() => router.push("/(app)/(screens)/my-orders")}
-        />
-        <OptionItem
-          iconName="location-outline"
-          title="Shipping Address"
-          onPress={() => router.push("/(app)/(screens)/edit-address")}
-        />
-        {/* <OptionItem
+        {/* Options List */}
+        <View className="mt-4">
+          <OptionItem
+            iconName="reader-outline"
+            title="My Order"
+            onPress={() => router.push("/(app)/(screens)/my-orders")}
+          />
+          <OptionItem
+            iconName="location-outline"
+            title="Shipping Address"
+            onPress={() => router.push("/(app)/(screens)/edit-address")}
+          />
+          {/* <OptionItem
           iconName="add-circle-outline"
           title="Create Request"
           onPress={() => console.log("Go to Create Request")}
         /> */}
-        <OptionItem
-          iconName="lock-closed-outline"
-          title="Privacy Policy"
-          onPress={() => router.push("/(app)/(screens)/privacy-policy")}
-        />
-        <OptionItem
-          iconName="log-out-outline"
-          title="Log out"
-          onPress={handleLogout}
-        />
-      </View>
+          <OptionItem
+            iconName="lock-closed-outline"
+            title="Privacy Policy"
+            onPress={() => router.push("/(app)/(screens)/privacy-policy")}
+          />
+          <OptionItem
+            iconName="log-out-outline"
+            title="Log out"
+            onPress={handleLogout}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

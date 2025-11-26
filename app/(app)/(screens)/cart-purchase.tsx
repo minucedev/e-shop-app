@@ -178,7 +178,7 @@ const CartPurchase = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}

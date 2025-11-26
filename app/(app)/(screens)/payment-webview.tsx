@@ -55,18 +55,18 @@ const PaymentWebView = () => {
 
         // Check order status
         const order = await orderApi.getOrderByCode(orderCode as string);
-        
+
         if (__DEV__) {
           console.log("📊 Order status:", order?.paymentStatus);
         }
 
         // Check if payment completed
-        if (order && (
-          order.paymentStatus === "PAID" || 
-          order.paymentStatus === "SUCCESS"
-        )) {
+        if (
+          order &&
+          (order.paymentStatus === "PAID" || order.paymentStatus === "SUCCESS")
+        ) {
           stopPolling();
-          
+
           if (__DEV__) {
             console.log("✅ Payment successful via polling");
           }
@@ -81,12 +81,13 @@ const PaymentWebView = () => {
               bankCode: "",
             },
           });
-        } else if (order && (
-          order.paymentStatus === "FAILED" || 
-          order.paymentStatus === "CANCELLED"
-        )) {
+        } else if (
+          order &&
+          (order.paymentStatus === "FAILED" ||
+            order.paymentStatus === "CANCELLED")
+        ) {
           stopPolling();
-          
+
           if (__DEV__) {
             console.log("❌ Payment failed via polling");
           }
@@ -133,15 +134,20 @@ const PaymentWebView = () => {
     }
 
     // Start polling when user reaches OTP confirmation page
-    if ((url.includes('/Confirm.html') || url.includes('/Transaction/Confirm')) && !isPolling) {
+    if (
+      (url.includes("/Confirm.html") || url.includes("/Transaction/Confirm")) &&
+      !isPolling
+    ) {
       if (__DEV__) {
-        console.log("📱 On OTP confirmation page - starting payment status polling");
+        console.log(
+          "📱 On OTP confirmation page - starting payment status polling"
+        );
       }
       startPaymentStatusPolling();
     }
 
     // Still check for direct callback (in case VNPay fixes their sandbox)
-    if (url.startsWith("myapp://") || url.includes('vnp_ResponseCode=')) {
+    if (url.startsWith("myapp://") || url.includes("vnp_ResponseCode=")) {
       if (hasHandledCallback) {
         return;
       }
@@ -181,7 +187,10 @@ const PaymentWebView = () => {
     }
 
     // Intercept any URL with VNPay response parameters
-    if (url.includes('vnp_ResponseCode=') || url.includes('vnp_TransactionNo=')) {
+    if (
+      url.includes("vnp_ResponseCode=") ||
+      url.includes("vnp_TransactionNo=")
+    ) {
       if (__DEV__) {
         console.log("✅ Intercepting URL with VNPay parameters:", url);
       }
@@ -276,7 +285,6 @@ const PaymentWebView = () => {
     }
   };
 
-
   // Get VNPay error message based on response code
   const getErrorMessage = (code: string): string => {
     const errorMessages: { [key: string]: string } = {
@@ -322,11 +330,16 @@ const PaymentWebView = () => {
     }
 
     // If error happens on callback URL or VNPay result URL, try to parse it anyway
-    if (nativeEvent.url && 
-        (nativeEvent.url.startsWith("myapp://") || 
-         nativeEvent.url.includes('vnp_ResponseCode='))) {
+    if (
+      nativeEvent.url &&
+      (nativeEvent.url.startsWith("myapp://") ||
+        nativeEvent.url.includes("vnp_ResponseCode="))
+    ) {
       if (__DEV__) {
-        console.log("🔍 Error on payment URL, attempting to parse:", nativeEvent.url);
+        console.log(
+          "🔍 Error on payment URL, attempting to parse:",
+          nativeEvent.url
+        );
       }
 
       if (!hasHandledCallback) {
@@ -369,7 +382,6 @@ const PaymentWebView = () => {
       </View>
     );
   }
-
 
   return (
     <View className="flex-1 bg-white">
@@ -432,16 +444,16 @@ const PaymentWebView = () => {
       {/* Debug info - Development only */}
       {__DEV__ && (
         <View className="absolute bottom-0 left-0 right-0 bg-black/90 p-3">
-          <Text className="text-white text-xs font-bold mb-1">
-            Debug Info:
-          </Text>
+          <Text className="text-white text-xs font-bold mb-1">Debug Info:</Text>
           <Text className="text-white text-xs" numberOfLines={2}>
             URL: {currentUrl}
           </Text>
           <Text className="text-yellow-400 text-xs mt-1">
-            {isPolling ? "🔄 Polling payment status..." : 
-             hasHandledCallback ? "✅ Payment processed" : 
-             "⏳ Waiting..."}
+            {isPolling
+              ? "🔄 Polling payment status..."
+              : hasHandledCallback
+                ? "✅ Payment processed"
+                : "⏳ Waiting..."}
           </Text>
         </View>
       )}

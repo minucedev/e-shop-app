@@ -33,6 +33,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useProduct } from "@/contexts/ProductContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { orderApi } from "@/services/orderApi";
 import { ReviewSummaryCard } from "@/components/ReviewSummaryCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { ReviewForm } from "@/components/ReviewForm";
@@ -58,6 +59,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVariationDropdownOpen, setIsVariationDropdownOpen] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   // Review states
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -70,6 +72,8 @@ const ProductDetail = () => {
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [isCheckingPurchase, setIsCheckingPurchase] = useState(true);
 
   // Fetch product detail
   useEffect(() => {
@@ -99,9 +103,18 @@ const ProductDetail = () => {
       fetchReviews(0);
       if (user) {
         fetchMyReview();
+      } else {
+        setIsCheckingPurchase(false);
       }
     }
   }, [productId, user]);
+
+  // Check purchase history after product is loaded
+  useEffect(() => {
+    if (product && user) {
+      checkPurchaseHistory();
+    }
+  }, [product, user]);
 
   const fetchReviewSummary = async () => {
     try {
@@ -121,6 +134,44 @@ const ProductDetail = () => {
       if (error.message?.includes("haven't reviewed")) {
         setMyReview(null);
       }
+    }
+  };
+
+  const checkPurchaseHistory = async () => {
+    if (!product) return;
+
+    try {
+      setIsCheckingPurchase(true);
+      const response = await orderApi.getOrderHistory(0, 100); // Get first 100 orders
+
+      if (response.success && response.data) {
+        const orders = response.data.content;
+
+        // Get all product variation IDs from current product
+        const productVariationIds = product.variations?.map((v) => v.id) || [];
+
+        // Check if any order contains this product
+        const purchased = orders.some((order) => {
+          // Only count completed/delivered orders
+          const validStatuses = ["COMPLETED", "DELIVERED", "SUCCESS"];
+          if (!validStatuses.includes(order.status.toUpperCase())) {
+            return false;
+          }
+
+          // Check if order contains any variation of this product
+          return order.orderItems.some((item) =>
+            productVariationIds.includes(item.productVariationId)
+          );
+        });
+
+        setHasPurchased(purchased);
+      }
+    } catch (error) {
+      console.log("Failed to check purchase history:", error);
+      // On error, allow review (don't block user)
+      setHasPurchased(true);
+    } finally {
+      setIsCheckingPurchase(false);
     }
   };
 
@@ -155,6 +206,15 @@ const ProductDetail = () => {
   };
 
   const handleCreateReview = async (rating: number, content: string) => {
+    // Verify purchase before submitting
+    if (!hasPurchased) {
+      Alert.alert(
+        "Không thể đánh giá",
+        "Bạn cần mua sản phẩm này trước khi có thể viết đánh giá."
+      );
+      return;
+    }
+
     try {
       const newReview = await createReview(Number(productId), {
         rating,
@@ -168,6 +228,12 @@ const ProductDetail = () => {
     } catch (error: any) {
       if (error.message?.includes("already reviewed")) {
         Alert.alert("Thông báo", "Bạn đã đánh giá sản phẩm này rồi");
+      } else if (
+        error.message?.includes("not purchased") ||
+        error.message?.includes("haven't purchased")
+      ) {
+        Alert.alert("Không thể đánh giá", "Bạn chưa mua sản phẩm này");
+        setHasPurchased(false); // Update state
       } else {
         throw error;
       }
@@ -325,7 +391,10 @@ const ProductDetail = () => {
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <SafeAreaView className="bg-white border-b border-gray-200" edges={['top']}>
+      <SafeAreaView
+        className="bg-white border-b border-gray-200"
+        edges={["top"]}
+      >
         <View className="flex-row items-center justify-between px-4 py-3">
           <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
             <Ionicons name="arrow-back" size={24} color="#222" />
@@ -610,9 +679,22 @@ const ProductDetail = () => {
             <Text className="text-lg font-semibold text-gray-900 mb-2">
               Mô tả sản phẩm
             </Text>
-            <Text className="text-gray-700 leading-6">
+            <Text
+              className="text-gray-700 leading-6"
+              numberOfLines={isDescriptionExpanded ? undefined : 4}
+            >
               {product.description}
             </Text>
+            {product.description && product.description.length > 150 && (
+              <TouchableOpacity
+                onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="mt-2"
+              >
+                <Text className="text-blue-600 font-semibold">
+                  {isDescriptionExpanded ? "Thu gọn" : "Xem thêm"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Product Attributes */}
@@ -690,15 +772,42 @@ const ProductDetail = () => {
                   />
                 </View>
               ) : (
-                <TouchableOpacity
-                  onPress={() => setShowReviewForm(true)}
-                  className="bg-blue-50 border-2 border-blue-200 border-dashed rounded-xl p-4 flex-row items-center justify-center"
-                >
-                  <Ionicons name="star-outline" size={24} color="#3b82f6" />
-                  <Text className="text-blue-600 font-semibold ml-2">
-                    Viết đánh giá cho sản phẩm này
-                  </Text>
-                </TouchableOpacity>
+                <>
+                  {isCheckingPurchase ? (
+                    <View className="bg-gray-50 rounded-xl p-4 flex-row items-center justify-center">
+                      <ActivityIndicator size="small" color="#666" />
+                      <Text className="text-gray-500 ml-2">
+                        Đang kiểm tra lịch sử mua hàng...
+                      </Text>
+                    </View>
+                  ) : hasPurchased ? (
+                    <TouchableOpacity
+                      onPress={() => setShowReviewForm(true)}
+                      className="bg-blue-50 border-2 border-blue-200 border-dashed rounded-xl p-4 flex-row items-center justify-center"
+                    >
+                      <Ionicons name="star-outline" size={24} color="#3b82f6" />
+                      <Text className="text-blue-600 font-semibold ml-2">
+                        Viết đánh giá cho sản phẩm này
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                      <View className="flex-row items-center mb-2">
+                        <Ionicons
+                          name="lock-closed"
+                          size={20}
+                          color="#f59e0b"
+                        />
+                        <Text className="text-amber-700 font-semibold ml-2">
+                          Chưa thể đánh giá
+                        </Text>
+                      </View>
+                      <Text className="text-amber-600 text-sm">
+                        Bạn cần mua sản phẩm này trước khi có thể viết đánh giá.
+                      </Text>
+                    </View>
+                  )}
+                </>
               )}
             </View>
           )}
@@ -764,7 +873,10 @@ const ProductDetail = () => {
       />
 
       {/* Bottom Action Bar */}
-      <SafeAreaView className="px-4 py-2 bg-white border-t border-gray-200" edges={['bottom']}>
+      <SafeAreaView
+        className="px-4 py-2 bg-white border-t border-gray-200"
+        edges={["bottom"]}
+      >
         <TouchableOpacity
           className={`py-4 rounded-xl ${
             selectedVariation && selectedVariation.availableQuantity > 0

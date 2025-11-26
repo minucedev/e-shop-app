@@ -145,7 +145,7 @@ const Home = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <StatusBar barStyle="dark-content" />
       {/* Status Bar and Header */}
       <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
@@ -201,7 +201,7 @@ const Home = () => {
               showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  className="mr-3 w-52"
+                  className="mr-3"
                   activeOpacity={0.85}
                   onPress={() => {
                     // Navigate to dedicated promotion products screen
@@ -214,16 +214,20 @@ const Home = () => {
                     });
                   }}
                 >
-                  <View className="bg-blue-100 rounded-xl p-4 relative overflow-hidden shadow-md">
+                  <View className="bg-blue-100 rounded-xl overflow-hidden shadow-md w-52 h-44">
                     {/* Banner Image */}
                     <Image
                       source={{ uri: item.image }}
-                      className="w-full h-32 rounded-xl mb-2"
+                      className="w-full h-28"
                       resizeMode="cover"
                     />
                     {/* Campaign Name Badge */}
-                    <View className="bg-white/90 px-3 py-1.5 rounded-lg">
-                      <Text className="text-sm font-bold text-blue-800 text-center">
+                    <View className="px-3 py-2 bg-white/90 absolute bottom-0 left-0 right-0 h-16 justify-center">
+                      <Text
+                        className="text-sm font-bold text-blue-800 text-center"
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                      >
                         {item.name}
                       </Text>
                     </View>

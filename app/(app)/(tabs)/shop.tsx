@@ -159,7 +159,7 @@ const Shop = () => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       {/* Header */}
       <View className="px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
         <View className="flex-row items-center justify-between">

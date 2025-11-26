@@ -8,6 +8,7 @@ import {
   ScrollView,
   Modal,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFilter } from "@/contexts/FilterContext";
@@ -43,6 +44,12 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [localMinPrice, setLocalMinPrice] = useState<string>("");
   const [localMaxPrice, setLocalMaxPrice] = useState<string>("");
+
+  // UI state
+  const [expandedBrands, setExpandedBrands] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState(false);
+  const [brandSearchQuery, setBrandSearchQuery] = useState("");
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
 
   // Load brands và categories khi component mount
   useEffect(() => {
@@ -104,7 +111,26 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
     clearFilters();
     setLocalMinPrice("");
     setLocalMaxPrice("");
+    setBrandSearchQuery("");
+    setCategorySearchQuery("");
   };
+
+  // Filter and limit brands/categories
+  const filteredBrands = availableBrands.filter((brand) =>
+    brand.name.toLowerCase().includes(brandSearchQuery.toLowerCase())
+  );
+  const displayedBrands = expandedBrands
+    ? filteredBrands
+    : filteredBrands.slice(0, 8);
+
+  const filteredCategories = availableCategories
+    .filter((cat) => !cat.parentCategoryId)
+    .filter((cat) =>
+      cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase())
+    );
+  const displayedCategories = expandedCategories
+    ? filteredCategories
+    : filteredCategories.slice(0, 6);
 
   const pricePresets = [
     { label: "Under 5M", min: 0, max: 5000000 },
@@ -175,12 +201,19 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                       onPress={() =>
                         setSorting(option.sortBy, option.sortDirection)
                       }
-                      className={`px-4 py-2 rounded-full border ${
+                      className={`px-4 py-2.5 rounded-full border flex-row items-center gap-1.5 ${
                         isSelected
                           ? "bg-blue-600 border-blue-600"
                           : "bg-white border-gray-300"
                       }`}
                     >
+                      {isSelected && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color="#fff"
+                        />
+                      )}
                       <Text
                         className={`font-medium ${
                           isSelected ? "text-white" : "text-gray-700"
@@ -196,53 +229,158 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
 
             {/* Brands Section */}
             <View className="mb-6">
-              <Text className="text-base font-bold text-gray-900 mb-3">
-                Brands
-              </Text>
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-base font-bold text-gray-900">
+                  Brands
+                  {filters.selectedBrands.length > 0 && (
+                    <Text className="text-blue-600">
+                      {" "}
+                      ({filters.selectedBrands.length})
+                    </Text>
+                  )}
+                </Text>
+              </View>
+
               {isLoadingBrands ? (
                 <ActivityIndicator size="small" color="#3b82f6" />
               ) : (
-                <View className="flex-row flex-wrap gap-2">
-                  {availableBrands.map((brand) => {
-                    const isSelected = filters.selectedBrands.includes(
-                      brand.id
-                    );
-                    return (
-                      <TouchableOpacity
-                        key={brand.id}
-                        onPress={() => toggleBrand(brand.id)}
-                        className={`px-4 py-2 rounded-full border ${
-                          isSelected
-                            ? "bg-blue-600 border-blue-600"
-                            : "bg-white border-gray-300"
-                        }`}
-                      >
-                        <Text
-                          className={`font-medium ${
-                            isSelected ? "text-white" : "text-gray-700"
+                <>
+                  {/* Search bar */}
+                  {availableBrands.length > 8 && (
+                    <View className="mb-3 flex-row items-center bg-gray-100 rounded-xl px-4 py-2">
+                      <Ionicons name="search" size={20} color="#9CA3AF" />
+                      <TextInput
+                        value={brandSearchQuery}
+                        onChangeText={setBrandSearchQuery}
+                        placeholder="Search brands..."
+                        placeholderTextColor="#9CA3AF"
+                        className="flex-1 ml-2 text-gray-900"
+                      />
+                      {brandSearchQuery.length > 0 && (
+                        <TouchableOpacity
+                          onPress={() => setBrandSearchQuery("")}
+                        >
+                          <Ionicons
+                            name="close-circle"
+                            size={20}
+                            color="#9CA3AF"
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Brand chips */}
+                  <View className="flex-row flex-wrap gap-2">
+                    {displayedBrands.map((brand) => {
+                      const isSelected = filters.selectedBrands.includes(
+                        brand.id
+                      );
+                      return (
+                        <TouchableOpacity
+                          key={brand.id}
+                          onPress={() => toggleBrand(brand.id)}
+                          className={`px-4 py-2.5 rounded-full border flex-row items-center gap-1.5 ${
+                            isSelected
+                              ? "bg-blue-600 border-blue-600"
+                              : "bg-white border-gray-300"
                           }`}
                         >
-                          {brand.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                          {isSelected && (
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={16}
+                              color="#fff"
+                            />
+                          )}
+                          <Text
+                            className={`font-medium ${
+                              isSelected ? "text-white" : "text-gray-700"
+                            }`}
+                          >
+                            {brand.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Show More/Less button */}
+                  {filteredBrands.length > 8 && (
+                    <TouchableOpacity
+                      onPress={() => setExpandedBrands(!expandedBrands)}
+                      className="mt-3 flex-row items-center justify-center gap-1"
+                    >
+                      <Text className="text-blue-600 font-semibold">
+                        {expandedBrands
+                          ? "Show less"
+                          : `Show ${filteredBrands.length - 8} more`}
+                      </Text>
+                      <Ionicons
+                        name={expandedBrands ? "chevron-up" : "chevron-down"}
+                        size={16}
+                        color="#2563eb"
+                      />
+                    </TouchableOpacity>
+                  )}
+
+                  {/* No results */}
+                  {brandSearchQuery && filteredBrands.length === 0 && (
+                    <Text className="text-gray-500 text-center py-4">
+                      No brands found
+                    </Text>
+                  )}
+                </>
               )}
             </View>
 
             {/* Categories Section */}
             <View className="mb-6">
-              <Text className="text-base font-bold text-gray-900 mb-3">
-                Categories
-              </Text>
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-base font-bold text-gray-900">
+                  Categories
+                  {filters.selectedCategories.length > 0 && (
+                    <Text className="text-blue-600">
+                      {" "}
+                      ({filters.selectedCategories.length})
+                    </Text>
+                  )}
+                </Text>
+              </View>
+
               {isLoadingCategories ? (
                 <ActivityIndicator size="small" color="#3b82f6" />
               ) : (
-                <View className="flex-row flex-wrap gap-2">
-                  {availableCategories
-                    .filter((cat) => !cat.parentCategoryId)
-                    .map((category) => {
+                <>
+                  {/* Search bar */}
+                  {availableCategories.filter((cat) => !cat.parentCategoryId)
+                    .length > 6 && (
+                    <View className="mb-3 flex-row items-center bg-gray-100 rounded-xl px-4 py-2">
+                      <Ionicons name="search" size={20} color="#9CA3AF" />
+                      <TextInput
+                        value={categorySearchQuery}
+                        onChangeText={setCategorySearchQuery}
+                        placeholder="Search categories..."
+                        placeholderTextColor="#9CA3AF"
+                        className="flex-1 ml-2 text-gray-900"
+                      />
+                      {categorySearchQuery.length > 0 && (
+                        <TouchableOpacity
+                          onPress={() => setCategorySearchQuery("")}
+                        >
+                          <Ionicons
+                            name="close-circle"
+                            size={20}
+                            color="#9CA3AF"
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Category chips */}
+                  <View className="flex-row flex-wrap gap-2">
+                    {displayedCategories.map((category) => {
                       const isSelected = filters.selectedCategories.includes(
                         category.id
                       );
@@ -250,12 +388,19 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                         <TouchableOpacity
                           key={category.id}
                           onPress={() => toggleCategory(category.id)}
-                          className={`px-4 py-2 rounded-full border ${
+                          className={`px-4 py-2.5 rounded-full border flex-row items-center gap-1.5 ${
                             isSelected
                               ? "bg-blue-600 border-blue-600"
                               : "bg-white border-gray-300"
                           }`}
                         >
+                          {isSelected && (
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={16}
+                              color="#fff"
+                            />
+                          )}
                           <Text
                             className={`font-medium ${
                               isSelected ? "text-white" : "text-gray-700"
@@ -266,7 +411,36 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                         </TouchableOpacity>
                       );
                     })}
-                </View>
+                  </View>
+
+                  {/* Show More/Less button */}
+                  {filteredCategories.length > 6 && (
+                    <TouchableOpacity
+                      onPress={() => setExpandedCategories(!expandedCategories)}
+                      className="mt-3 flex-row items-center justify-center gap-1"
+                    >
+                      <Text className="text-blue-600 font-semibold">
+                        {expandedCategories
+                          ? "Show less"
+                          : `Show ${filteredCategories.length - 6} more`}
+                      </Text>
+                      <Ionicons
+                        name={
+                          expandedCategories ? "chevron-up" : "chevron-down"
+                        }
+                        size={16}
+                        color="#2563eb"
+                      />
+                    </TouchableOpacity>
+                  )}
+
+                  {/* No results */}
+                  {categorySearchQuery && filteredCategories.length === 0 && (
+                    <Text className="text-gray-500 text-center py-4">
+                      No categories found
+                    </Text>
+                  )}
+                </>
               )}
             </View>
 
@@ -285,12 +459,19 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                     <TouchableOpacity
                       key={preset.label}
                       onPress={() => setPriceRange(preset.min, preset.max)}
-                      className={`px-4 py-2 rounded-full border ${
+                      className={`px-4 py-2.5 rounded-full border flex-row items-center gap-1.5 ${
                         isSelected
                           ? "bg-blue-600 border-blue-600"
                           : "bg-white border-gray-300"
                       }`}
                     >
+                      {isSelected && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color="#fff"
+                        />
+                      )}
                       <Text
                         className={`font-medium ${
                           isSelected ? "text-white" : "text-gray-700"
@@ -302,7 +483,6 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                   );
                 })}
               </View>
-              {/* Custom price inputs would go here - simplified for now */}
             </View>
 
             {/* Rating Section */}
@@ -317,12 +497,19 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                     <TouchableOpacity
                       key={rating}
                       onPress={() => setMinRating(rating)}
-                      className={`px-4 py-2 rounded-full border flex-row items-center gap-1 ${
+                      className={`px-4 py-2.5 rounded-full border flex-row items-center gap-1.5 ${
                         isSelected
                           ? "bg-blue-600 border-blue-600"
                           : "bg-white border-gray-300"
                       }`}
                     >
+                      {isSelected && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color="#fff"
+                        />
+                      )}
                       <Ionicons
                         name="star"
                         size={16}

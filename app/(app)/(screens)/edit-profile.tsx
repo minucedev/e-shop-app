@@ -96,7 +96,10 @@ const EditProfile = () => {
   return (
     <ScrollView className="flex-1 bg-gray-50">
       {/* Header */}
-      <SafeAreaView className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200" edges={['top']}>
+      <SafeAreaView
+        className="flex-row items-center justify-between p-4 bg-white border-b border-gray-200"
+        edges={["top"]}
+      >
         <TouchableOpacity onPress={() => router.back()} className="p-2">
           <Ionicons name="arrow-back" size={24} color="#2563eb" />
         </TouchableOpacity>
