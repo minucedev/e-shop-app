@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -254,7 +256,12 @@ const CartPurchase = () => {
         <Text className="text-2xl font-bold text-gray-900">Checkout</Text>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Delivery Info */}
         <View className="px-5">
           <Text className="text-xl font-bold text-black mb-4 mt-4">
@@ -442,8 +449,7 @@ const CartPurchase = () => {
       </ScrollView>
 
       {/* Total and Continue Button - Fixed at bottom */}
-      <View className="px-5 pb-4 pt-4 bg-white border-t border-gray-100">
-        {/* Total calculation */}
+      <View className="px-5 pb-4 pt-4 bg-white border-t border-gray-100">{/* Total calculation */}
         {(() => {
           // Calculate subtotal from cart items
           const subtotal = parsedCartItems.reduce(
@@ -514,6 +520,7 @@ const CartPurchase = () => {
           )}
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

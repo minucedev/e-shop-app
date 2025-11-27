@@ -6,6 +6,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, router } from "expo-router";
@@ -14,34 +15,52 @@ import { OrderProvider, useOrders } from "@/contexts/OrderContext";
 import { OrderCard } from "@/components/OrderCard";
 import { Order } from "@/services/orderApi";
 
-// Tab definitions
-type TabKey = "processing" | "completed" | "cancelled";
+// Filter options for dropdown
+type FilterKey = "all" | "processing" | "shipping" | "completed" | "cancelled";
 
-interface Tab {
-  key: TabKey;
+interface FilterOption {
+  key: FilterKey;
   label: string;
   icon: string;
-  statuses: string[];
+  statuses: string[]; // Empty array means show all
+  description: string;
 }
 
-const TABS: Tab[] = [
+const FILTER_OPTIONS: FilterOption[] = [
+  {
+    key: "all",
+    label: "Tất cả đơn hàng",
+    icon: "list-outline",
+    statuses: [],
+    description: "Hiển thị tất cả",
+  },
   {
     key: "processing",
     label: "Đang xử lý",
     icon: "time-outline",
-    statuses: ["PENDING", "CONFIRMED"],
+    statuses: ["PENDING", "CONFIRMED", "PROCESSING"],
+    description: "Chờ xử lý, đã xác nhận, đang chuẩn bị",
+  },
+  {
+    key: "shipping",
+    label: "Đang giao hàng",
+    icon: "car-outline",
+    statuses: ["SHIPPING"],
+    description: "Đang trên đường giao",
   },
   {
     key: "completed",
-    label: "Hoàn thành",
+    label: "Đã hoàn thành",
     icon: "checkmark-done-outline",
-    statuses: ["SHIPPING", "DELIVERED"],
+    statuses: ["DELIVERED"],
+    description: "Đã giao thành công",
   },
   {
     key: "cancelled",
-    label: "Đã hủy",
+    label: "Đã hủy / Trả hàng",
     icon: "close-circle-outline",
-    statuses: ["CANCELLED"],
+    statuses: ["CANCELLED", "RETURNED"],
+    description: "Đơn hủy hoặc trả lại",
   },
 ];
 
@@ -60,7 +79,8 @@ const MyOrdersContent = () => {
   } = useOrders();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabKey>("processing");
+  const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     loadAllOrders(); // Load all orders to get accurate counts
@@ -77,29 +97,35 @@ const MyOrdersContent = () => {
     return;
   };
 
-  // Filter orders based on active tab
+  // Filter orders based on active filter
   const filteredOrders = useMemo(() => {
-    const currentTab = TABS.find((tab) => tab.key === activeTab);
-    if (!currentTab) {
-      return orders;
+    const currentFilter = FILTER_OPTIONS.find((filter) => filter.key === activeFilter);
+    if (!currentFilter || currentFilter.statuses.length === 0) {
+      return orders; // Show all orders
     }
-    return orders.filter((order) => currentTab.statuses.includes(order.status));
-  }, [orders, activeTab]);
+    return orders.filter((order) => currentFilter.statuses.includes(order.status));
+  }, [orders, activeFilter]);
 
-  // Count orders for each tab
-  const tabCounts = useMemo(() => {
-    const counts: Record<TabKey, number> = {
+  // Count orders for each filter
+  const filterCounts = useMemo(() => {
+    const counts: Record<FilterKey, number> = {
+      all: 0,
       processing: 0,
+      shipping: 0,
       completed: 0,
       cancelled: 0,
     };
 
+    counts.all = orders.length;
+
     orders.forEach((order) => {
-      if (["PENDING", "CONFIRMED"].includes(order.status)) {
+      if (["PENDING", "CONFIRMED", "PROCESSING"].includes(order.status)) {
         counts.processing++;
-      } else if (["SHIPPING", "DELIVERED"].includes(order.status)) {
+      } else if (order.status === "SHIPPING") {
+        counts.shipping++;
+      } else if (order.status === "DELIVERED") {
         counts.completed++;
-      } else if (order.status === "CANCELLED") {
+      } else if (["CANCELLED", "RETURNED"].includes(order.status)) {
         counts.cancelled++;
       }
     });
@@ -137,56 +163,111 @@ const MyOrdersContent = () => {
     </View>
   );
 
-  const renderTabBar = () => (
-    <View className="bg-white border-b border-gray-200 px-4 py-3">
-      <View className="flex-row justify-between">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          const count = tabCounts[tab.key];
+  const renderFilterDropdown = () => {
+    const currentFilter = FILTER_OPTIONS.find((f) => f.key === activeFilter);
+    const count = filterCounts[activeFilter];
 
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => setActiveTab(tab.key)}
-              className={`flex-1 mx-1 px-3 py-3 rounded-lg items-center ${
-                isActive ? "bg-blue-600" : "bg-gray-100"
-              }`}
-              style={{ maxWidth: "32%" }}
-            >
-              <Ionicons
-                name={tab.icon as any}
-                size={20}
-                color={isActive ? "#FFFFFF" : "#6B7280"}
-              />
-              <Text
-                className={`mt-1 text-xs font-medium text-center ${
-                  isActive ? "text-white" : "text-gray-700"
-                }`}
-                numberOfLines={1}
-              >
-                {tab.label}
+    return (
+      <View className="bg-white border-b border-gray-200">
+        {/* Dropdown Header */}
+        <TouchableOpacity
+          onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="px-4 py-3 flex-row items-center justify-between"
+          activeOpacity={0.7}
+        >
+          <View className="flex-row items-center flex-1">
+            <Ionicons
+              name={currentFilter?.icon as any}
+              size={20}
+              color="#2563eb"
+            />
+            <View className="ml-3 flex-1">
+              <Text className="text-base font-semibold text-gray-900">
+                {currentFilter?.label}
               </Text>
-              {count > 0 && (
-                <View
-                  className={`mt-1 px-2 py-0.5 rounded-full ${
-                    isActive ? "bg-white/20" : "bg-blue-100"
+              <Text className="text-xs text-gray-500 mt-0.5">
+                {count} đơn hàng
+              </Text>
+            </View>
+          </View>
+          <Ionicons
+            name={isDropdownOpen ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="#6B7280"
+          />
+        </TouchableOpacity>
+
+        {/* Dropdown Options */}
+        {isDropdownOpen && (
+          <View className="border-t border-gray-100">
+            {FILTER_OPTIONS.map((option) => {
+              const isSelected = activeFilter === option.key;
+              const optionCount = filterCounts[option.key];
+
+              return (
+                <TouchableOpacity
+                  key={option.key}
+                  onPress={() => {
+                    setActiveFilter(option.key);
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`px-4 py-3 flex-row items-center border-b border-gray-50 ${
+                    isSelected ? "bg-blue-50" : "bg-white"
                   }`}
+                  activeOpacity={0.7}
                 >
-                  <Text
-                    className={`text-xs font-semibold ${
-                      isActive ? "text-white" : "text-blue-700"
+                  <View
+                    className={`w-10 h-10 rounded-full items-center justify-center ${
+                      isSelected ? "bg-blue-100" : "bg-gray-100"
                     }`}
                   >
-                    {count}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+                    <Ionicons
+                      name={option.icon as any}
+                      size={18}
+                      color={isSelected ? "#2563eb" : "#6B7280"}
+                    />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text
+                      className={`text-sm font-medium ${
+                        isSelected ? "text-blue-700" : "text-gray-900"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                    <Text className="text-xs text-gray-500 mt-0.5">
+                      {option.description}
+                    </Text>
+                  </View>
+                  <View
+                    className={`px-2.5 py-1 rounded-full ${
+                      isSelected ? "bg-blue-600" : "bg-gray-200"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-bold ${
+                        isSelected ? "text-white" : "text-gray-700"
+                      }`}
+                    >
+                      {optionCount}
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#2563eb"
+                      style={{ marginLeft: 8 }}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderFooter = () => {
     if (!loading) return null;
@@ -228,8 +309,8 @@ const MyOrdersContent = () => {
         }}
       />
 
-      {/* Tab Bar */}
-      {renderTabBar()}
+      {/* Filter Dropdown */}
+      {renderFilterDropdown()}
 
       {/* Order List */}
       {error ? (

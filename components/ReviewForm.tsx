@@ -8,6 +8,8 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -71,7 +73,11 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
       onRequestClose={onClose}
     >
       <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-white rounded-t-3xl p-6">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
+          <View className="bg-white rounded-t-3xl p-6">
           {/* Header */}
           <View className="flex-row items-center justify-between mb-4">
             <Text className="text-xl font-bold text-gray-900">
@@ -149,7 +155,8 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
               </Text>
             )}
           </TouchableOpacity>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

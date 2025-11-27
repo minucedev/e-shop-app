@@ -63,7 +63,7 @@ const Home = () => {
       >
         {/* Product Image */}
         <View className="relative">
-          <View className="bg-gray-50 w-32 h-32 rounded-t-xl items-center justify-center overflow-hidden">
+          <View className="bg-gray-50 h-32 rounded-t-xl items-center justify-center overflow-hidden">
             <Image
               source={{
                 uri: item.imageUrl || "https://via.placeholder.com/150",
