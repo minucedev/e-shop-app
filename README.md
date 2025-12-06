@@ -34,6 +34,12 @@ Cách 2: npx expo start
 # 1. Khởi chạy
 npx expo start --dev-client
 # 2. Bật app đã cài đặt và quét mã QR
+
+
+# Nếu cần thì tải 
+npx expo install expo-image-picker
+
+#Ai đang chạy cổng 8005
 ```
 
 **Lưu ý:**

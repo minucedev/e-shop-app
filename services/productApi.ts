@@ -137,14 +137,35 @@ export const getProducts = async (
   }
 
   const url = `/products?${queryParams.toString()}`;
-  console.log("[productApi] Fetching products with URL:", url);
-  console.log("[productApi] Campaign ID in params:", campaignId);
+  console.log("📦 [productApi] Fetching products:");
+  console.log("   URL:", url);
+  console.log("   Params:", {
+    page,
+    size,
+    sortBy,
+    sortDirection,
+    name,
+    brandId,
+    categoryId,
+    minPrice,
+    maxPrice,
+    minRating,
+    campaignId,
+  });
 
   const response = await apiClient.get<ProductsPageResponse>(url);
 
   if (!response.success || !response.data) {
+    console.error("❌ [productApi] Failed to fetch products:", response.error);
     throw new Error(response.error || "Failed to fetch products");
   }
+
+  console.log("✅ [productApi] Products loaded:", {
+    total: response.data.page.totalElements,
+    page: response.data.page.number,
+    size: response.data.content.length,
+    totalPages: response.data.page.totalPages,
+  });
 
   return response.data;
 };
@@ -155,13 +176,78 @@ export const getProducts = async (
 export const getProductDetail = async (
   productId: number | string
 ): Promise<ProductDetailResponse> => {
+  console.log("🔍 [productApi] Fetching product detail:", productId);
+
   const response = await apiClient.get<ProductDetailResponse>(
     `/products/${productId}`
   );
 
   if (!response.success || !response.data) {
+    console.error(
+      "❌ [productApi] Failed to fetch product detail:",
+      response.error
+    );
     throw new Error(response.error || "Failed to fetch product detail");
   }
 
+  console.log("✅ [productApi] Product detail loaded:", response.data.name);
+
   return response.data;
+};
+
+/**
+ * Lấy danh sách sản phẩm theo SPU codes (batch fetch)
+ * Dùng cho AI Chatbot khi trả về related_products
+ *
+ * @param spus - Mảng SPU codes (VD: ["LAP001", "LAP002", "MOUSE03"])
+ * @returns Mảng ProductApiResponse
+ *
+ * API Endpoint: GET /products/by-spus?spus=LAP001&spus=LAP002&size=10
+ */
+export const getProductsBySpus = async (
+  spus: string[]
+): Promise<ProductApiResponse[]> => {
+  if (!spus || spus.length === 0) {
+    return [];
+  }
+
+  console.log("🔍 [productApi] Fetching products by SPUs:", spus);
+
+  try {
+    // Build query string: ?spus=LAP001&spus=LAP002&spus=LAP003&size=10
+    const queryParams = new URLSearchParams();
+    spus.forEach((spu) => queryParams.append("spus", spu));
+    queryParams.append("size", spus.length.toString());
+
+    const url = `/products/by-spus?${queryParams.toString()}`;
+
+    console.log("📡 [productApi] Request URL:", url);
+
+    const response = await apiClient.get<ProductsPageResponse>(url);
+
+    if (!response.success || !response.data) {
+      console.error(
+        "❌ [productApi] Failed to fetch products by SPUs:",
+        response.error
+      );
+      return [];
+    }
+
+    // Extract content array from paginated response
+    const products = response.data.content || [];
+
+    console.log(
+      "✅ [productApi] Products loaded by SPUs:",
+      products.length,
+      "products"
+    );
+
+    return products;
+  } catch (error: any) {
+    console.error(
+      "❌ [productApi] Error fetching products by SPUs:",
+      error.message
+    );
+    return [];
+  }
 };

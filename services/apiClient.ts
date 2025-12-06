@@ -31,7 +31,33 @@ function getApiBaseUrl() {
   return url;
 }
 
+/**
+ * Get AI API Base URL (port 8005)
+ * AI services run on separate port
+ */
+function getAiApiBaseUrl() {
+  const expoDebuggerHost = Constants.expoConfig?.hostUri;
+
+  if (expoDebuggerHost) {
+    const ip = expoDebuggerHost.split(":")[0];
+    const url = `http://${ip}:8005`;
+    console.log(`🤖 AI API Base URL (Expo Device): ${url}`);
+    return url;
+  }
+
+  if (Platform.OS === "android") {
+    const url = `http://10.0.2.2:8005`;
+    console.log(`🤖 AI API Base URL (Android Emulator): ${url}`);
+    return url;
+  }
+
+  const url = `http://localhost:8005`;
+  console.log(`🤖 AI API Base URL (iOS Simulator): ${url}`);
+  return url;
+}
+
 const API_BASE_URL = getApiBaseUrl();
+const AI_API_BASE_URL = getAiApiBaseUrl();
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -191,6 +217,18 @@ class ApiClient {
       try {
         const text = await response.text();
         data = text ? JSON.parse(text) : {};
+
+        // Log successful response với full data
+        if (response.ok) {
+          console.log(`✅ API Response [${response.status}]:`, {
+            endpoint,
+            method: config.method,
+            status: response.status,
+            dataType: typeof data,
+            dataKeys: data ? Object.keys(data).slice(0, 10) : [],
+            fullData: data, // Log toàn bộ response data
+          });
+        }
       } catch (jsonErr) {
         // If DELETE and parse fails, it's probably empty - treat as success
         if (config.method === "DELETE" && response.ok) {
@@ -374,4 +412,6 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+export const aiApiClient = new ApiClient(AI_API_BASE_URL);
 export type { ApiResponse };
+export { AI_API_BASE_URL };
