@@ -41,7 +41,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, user, isLoading: authLoading } = useAuth();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,10 +49,24 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Helper function to handle auth errors
   const handleAuthError = async (err: any) => {
+    // Ignore cancelled requests (during logout)
+    if (
+      err.message?.includes("Request cancelled") ||
+      err.message?.includes("Logging out")
+    ) {
+      return true; // Handled - do nothing
+    }
+
     if (
       err.message?.includes("Access denied") ||
       err.message?.includes("AUTHORIZATION_DENIED")
     ) {
+      // Check if already logging out to prevent multiple logout calls
+      const { apiClient } = await import("@/services/apiClient");
+      if (apiClient.getIsLoggingOut()) {
+        return true; // Already handling logout
+      }
+
       console.log("Auth error detected, signing out and redirecting to login");
       Toast.show({
         type: "error",
@@ -86,13 +100,17 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const cartData = await fetchCart();
       setCart(cartData);
     } catch (err: any) {
-      console.error("Failed to fetch cart:", err);
       setError(err.message || "Failed to load cart");
 
-      // Handle auth errors
-      if (await handleAuthError(err)) {
-        return; // Don't show additional error if redirected
+      // Handle auth errors first (before logging)
+      const isAuthError = await handleAuthError(err);
+
+      if (isAuthError) {
+        return; // Auth error handled, don't log or show additional errors
       }
+
+      // Only log non-auth errors
+      console.error("Failed to fetch cart:", err);
 
       // Don't show toast on initial load failure
     } finally {
@@ -100,10 +118,22 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Load cart on mount
+  // Load cart on mount - only if user is authenticated
   useEffect(() => {
-    refreshCart();
-  }, []);
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return;
+    }
+
+    // Only fetch cart if user is logged in
+    if (user) {
+      refreshCart();
+    } else {
+      // No user, set loading to false without fetching
+      setIsLoading(false);
+      setCart(null);
+    }
+  }, [user, authLoading]);
 
   // Add item to cart
   const addToCart = async (

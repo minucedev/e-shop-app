@@ -192,34 +192,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Gọi API logout - now handles errors better in apiClient
-      const response = await authApi.logout();
-      if (response.success) {
-        console.log("Logout API successful");
+      // Import apiClient để set logout flag
+      const { apiClient } = await import("@/services/apiClient");
+
+      // Start logout - này sẽ abort tất cả pending requests
+      apiClient.startLogout();
+
+      try {
+        // Gọi API logout - now handles errors better in apiClient
+        const response = await authApi.logout();
+        if (response.success) {
+          console.log("Logout API successful");
+        }
+      } catch (e) {
+        console.error("Logout API error:", e);
+        // Vẫn tiếp tục clear local session
       }
-    } catch (e) {
-      console.error("Logout API error:", e);
-      // Vẫn tiếp tục clear local session
-    }
 
-    // Clear local session - always do this regardless of API result
-    setUser(null);
-    setAccessToken(null);
-    setRefreshToken(null);
-    setExpiresAt(null);
-    setHasError(false);
-    setErrorMessage(undefined);
+      // Clear local session - always do this regardless of API result
+      setUser(null);
+      setAccessToken(null);
+      setRefreshToken(null);
+      setExpiresAt(null);
+      setHasError(false);
+      setErrorMessage(undefined);
 
-    try {
-      await AsyncStorage.multiRemove([
-        "accessToken",
-        "refreshToken",
-        "expiresAt",
-      ]);
-      console.log("Local session cleared successfully");
-    } catch (storageError) {
-      console.error("Error clearing local storage:", storageError);
-      // Even if storage clear fails, we've already cleared the state
+      try {
+        await AsyncStorage.multiRemove([
+          "accessToken",
+          "refreshToken",
+          "expiresAt",
+        ]);
+        console.log("Local session cleared successfully");
+      } catch (storageError) {
+        console.error("Error clearing local storage:", storageError);
+        // Even if storage clear fails, we've already cleared the state
+      }
+
+      // End logout state
+      apiClient.endLogout();
+    } catch (error) {
+      console.error("SignOut error:", error);
+      // Make sure to end logout even on error
+      try {
+        const { apiClient } = await import("@/services/apiClient");
+        apiClient.endLogout();
+      } catch {}
     }
   };
 

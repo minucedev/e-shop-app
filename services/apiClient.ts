@@ -70,9 +70,44 @@ class ApiClient {
   private baseURL: string;
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<string | null> | null = null;
+  private isLoggingOut: boolean = false;
+  private pendingRequests: Set<AbortController> = new Set();
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
+  }
+
+  /**
+   * Check if currently logging out
+   */
+  public getIsLoggingOut(): boolean {
+    return this.isLoggingOut;
+  }
+
+  /**
+   * Set logout state and abort all pending requests
+   */
+  public startLogout(): void {
+    if (this.isLoggingOut) return; // Already logging out
+
+    this.isLoggingOut = true;
+
+    // Abort all pending requests
+    this.pendingRequests.forEach((controller) => {
+      try {
+        controller.abort();
+      } catch (e) {
+        // Ignore abort errors
+      }
+    });
+    this.pendingRequests.clear();
+  }
+
+  /**
+   * Reset logout state after logout completes
+   */
+  public endLogout(): void {
+    this.isLoggingOut = false;
   }
 
   private async getAuthHeaders(): Promise<HeadersInit> {
@@ -157,6 +192,15 @@ class ApiClient {
     options: RequestInit = {},
     isRetry: boolean = false
   ): Promise<ApiResponse<T>> {
+    // Block new requests if logging out (except logout endpoint itself)
+    if (this.isLoggingOut && !endpoint.includes("/auth/logout")) {
+      throw new Error("Logging out, request cancelled");
+    }
+
+    // Create abort controller for this request
+    const abortController = new AbortController();
+    this.pendingRequests.add(abortController);
+
     try {
       const url = `${this.baseURL}${endpoint}`;
       console.log(`🚀 API Request: ${options.method || "GET"} ${url}`);
@@ -169,6 +213,7 @@ class ApiClient {
           ...headers,
           ...options.headers,
         },
+        signal: abortController.signal, // Add abort signal
       };
 
       console.log(`📤 Request config:`, {
@@ -261,10 +306,16 @@ class ApiClient {
           "haven't reviewed",
           "already reviewed",
           "already in wishlist",
+          "AUTHORIZATION_DENIED",
+          "Access denied",
         ];
-        const isExpectedError = expectedErrors.some((msg) =>
-          data.message?.toLowerCase().includes(msg.toLowerCase())
-        );
+        const isExpectedError =
+          response.status === 403 || // Don't log 403 errors
+          expectedErrors.some(
+            (msg) =>
+              data.message?.toLowerCase().includes(msg.toLowerCase()) ||
+              data.error?.includes(msg)
+          );
 
         // Log response details for debugging (except expected errors)
         if (!isExpectedError) {
@@ -304,6 +355,11 @@ class ApiClient {
         message: data.message,
       };
     } catch (error: any) {
+      // Handle abort errors silently
+      if (error.name === "AbortError") {
+        throw new Error("Request cancelled");
+      }
+
       // Ẩn log lỗi parse JSON rỗng (SyntaxError: JSON Parse error: Unexpected end of input)
       if (
         error.name === "SyntaxError" &&
@@ -317,6 +373,10 @@ class ApiClient {
           "haven't reviewed",
           "already reviewed",
           "already in wishlist",
+          "Logging out",
+          "Request cancelled",
+          "Access denied",
+          "AUTHORIZATION_DENIED",
         ];
         const isExpectedError = expectedErrors.some((msg) =>
           error.message?.toLowerCase().includes(msg.toLowerCase())
@@ -337,6 +397,9 @@ class ApiClient {
             "An unexpected error occurred. Please try again later.";
 
       throw new Error(errorMessage);
+    } finally {
+      // Remove this request from pending set
+      this.pendingRequests.delete(abortController);
     }
   }
 

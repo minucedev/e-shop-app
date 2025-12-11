@@ -5,6 +5,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { ChatMessage } from "@/contexts/ChatContext";
 import { ProductCarousel } from "./ProductCarousel";
+import { MarkdownText } from "@/components/MarkdownText";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -51,9 +52,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         )}
 
         {/* Message Content */}
-        <Text style={[styles.text, isUser ? styles.textUser : styles.textAI]}>
-          {message.content}
-        </Text>
+        {isUser ? (
+          <Text style={[styles.text, styles.textUser]}>{message.content}</Text>
+        ) : (
+          <View>
+            <MarkdownText>{message.content}</MarkdownText>
+          </View>
+        )}
 
         {/* Policy Source (nếu có) */}
         {!isUser && message.src && (

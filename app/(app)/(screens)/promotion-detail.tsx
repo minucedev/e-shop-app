@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -130,9 +131,10 @@ const PromotionDetail = () => {
 
   return (
     <View className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" />
       {/* Header */}
       <SafeAreaView
-        className="bg-white border-b border-gray-200"
+        className="bg-white border-b border-gray-200 mt-4"
         edges={["top"]}
       >
         <View className="flex-row items-center justify-between px-4 py-3">
@@ -212,10 +214,6 @@ const PromotionDetail = () => {
                 </View>
               </View>
             </View>
-
-            {/* <Text className="text-lg font-semibold text-blue-600 mb-2">
-              Applicable Products:
-            </Text> */}
           </View>
         }
       />

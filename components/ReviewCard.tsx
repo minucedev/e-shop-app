@@ -1,5 +1,5 @@
 // components/ReviewCard.tsx
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Review } from "@/services/reviewApi";
@@ -22,64 +22,74 @@ const formatDate = (dateString: string) => {
   }).format(date);
 };
 
-export const ReviewCard: React.FC<ReviewCardProps> = ({
-  review,
-  currentUserId,
-  onEdit,
-  onDelete,
-}) => {
-  const isMyReview = currentUserId && review.userId === currentUserId;
+export const ReviewCard: React.FC<ReviewCardProps> = React.memo(
+  ({ review, currentUserId, onEdit, onDelete }) => {
+    const isMyReview = currentUserId && review.userId === currentUserId;
 
-  return (
-    <View className="bg-white rounded-xl p-4 mb-3 border border-gray-200">
-      {/* Header */}
-      <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1">
-          <Text className="text-base font-semibold text-gray-900">
-            {review.userFullName}
-          </Text>
-          <View className="flex-row items-center mt-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Ionicons
-                key={star}
-                name={star <= review.rating ? "star" : "star-outline"}
-                size={14}
-                color="#FFA500"
-              />
-            ))}
-            <Text className="text-gray-500 text-xs ml-2">
-              {formatDate(review.createdAt)}
+    // Memoize formatted date
+    const formattedDate = useMemo(
+      () => formatDate(review.createdAt),
+      [review.createdAt]
+    );
+
+    return (
+      <View className="bg-white rounded-xl p-4 mb-3 border border-gray-200">
+        {/* Header */}
+        <View className="flex-row items-start justify-between mb-2">
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-gray-900">
+              {review.userFullName}
             </Text>
+            <View className="flex-row items-center mt-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Ionicons
+                  key={star}
+                  name={star <= review.rating ? "star" : "star-outline"}
+                  size={14}
+                  color="#FFA500"
+                />
+              ))}
+              <Text className="text-gray-500 text-xs ml-2">
+                {formattedDate}
+              </Text>
+            </View>
           </View>
+
+          {/* Edit/Delete buttons - only for current user's review */}
+          {isMyReview && (
+            <View className="flex-row items-center gap-2">
+              {onEdit && (
+                <TouchableOpacity
+                  onPress={() => onEdit(review)}
+                  className="p-2"
+                >
+                  <Ionicons name="create-outline" size={20} color="#3b82f6" />
+                </TouchableOpacity>
+              )}
+              {onDelete && (
+                <TouchableOpacity
+                  onPress={() => onDelete(review.id)}
+                  className="p-2"
+                >
+                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
 
-        {/* Edit/Delete buttons - only for current user's review */}
-        {isMyReview && (
-          <View className="flex-row items-center gap-2">
-            {onEdit && (
-              <TouchableOpacity onPress={() => onEdit(review)} className="p-2">
-                <Ionicons name="create-outline" size={20} color="#3b82f6" />
-              </TouchableOpacity>
-            )}
-            {onDelete && (
-              <TouchableOpacity
-                onPress={() => onDelete(review.id)}
-                className="p-2"
-              >
-                <Ionicons name="trash-outline" size={20} color="#ef4444" />
-              </TouchableOpacity>
-            )}
-          </View>
+        {/* Review Content */}
+        <Text className="text-gray-700 leading-5">{review.content}</Text>
+
+        {/* Updated Badge */}
+        {review.updatedAt !== review.createdAt && (
+          <Text className="text-gray-400 text-xs mt-2 italic">
+            Đã chỉnh sửa
+          </Text>
         )}
       </View>
+    );
+  }
+);
 
-      {/* Review Content */}
-      <Text className="text-gray-700 leading-5">{review.content}</Text>
-
-      {/* Updated Badge */}
-      {review.updatedAt !== review.createdAt && (
-        <Text className="text-gray-400 text-xs mt-2 italic">Đã chỉnh sửa</Text>
-      )}
-    </View>
-  );
-};
+ReviewCard.displayName = "ReviewCard";
