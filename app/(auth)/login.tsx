@@ -1,17 +1,17 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Alert,
-} from "react-native";
-import React, { useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { colors } from "../../constants/colors";
 import { fonts } from "@/constants/fonts";
 import { useAuth } from "@/contexts/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { colors } from "../../constants/colors";
 
 const Login = () => {
   const router = useRouter();
@@ -238,6 +238,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontFamily: fonts.Light,
     fontSize: 16,
+    color: colors.primary,
   },
   forgotPasswordText: {
     textAlign: "right",
