@@ -10,6 +10,7 @@ import { PromotionProvider } from "@/contexts/PromotionContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { FilterProvider } from "@/contexts/FilterContext";
 import { OrderProvider } from "@/contexts/OrderContext";
+import { ChatProvider } from "@/contexts/ChatContext";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
@@ -56,32 +57,34 @@ export default function RootLayout() {
             <PromotionProvider>
               <CartProvider>
                 <OrderProvider>
-                  <AuthGate>
-                    <Stack screenOptions={{ headerShown: false }}>
-                      {/* Initial routing screen */}
-                      <Stack.Screen
-                        name="index"
-                        options={{ headerShown: false }}
-                      />
-                      {/* Welcome screen (root) */}
-                      <Stack.Screen
-                        name="welcome"
-                        options={{ headerShown: false }}
-                      />
-                      {/* Auth screens group */}
-                      <Stack.Screen
-                        name="(auth)"
-                        options={{ headerShown: false }}
-                      />
-                      {/* Main app screens group */}
-                      <Stack.Screen
-                        name="(app)"
-                        options={{ headerShown: false }}
-                      />
-                      {/* Global screens */}
-                      <Stack.Screen name="+not-found" />
-                    </Stack>
-                  </AuthGate>
+                  <ChatProvider>
+                    <AuthGate>
+                      <Stack screenOptions={{ headerShown: false }}>
+                        {/* Initial routing screen */}
+                        <Stack.Screen
+                          name="index"
+                          options={{ headerShown: false }}
+                        />
+                        {/* Welcome screen (root) */}
+                        <Stack.Screen
+                          name="welcome"
+                          options={{ headerShown: false }}
+                        />
+                        {/* Auth screens group */}
+                        <Stack.Screen
+                          name="(auth)"
+                          options={{ headerShown: false }}
+                        />
+                        {/* Main app screens group */}
+                        <Stack.Screen
+                          name="(app)"
+                          options={{ headerShown: false }}
+                        />
+                        {/* Global screens */}
+                        <Stack.Screen name="+not-found" />
+                      </Stack>
+                    </AuthGate>
+                  </ChatProvider>
                 </OrderProvider>
               </CartProvider>
             </PromotionProvider>

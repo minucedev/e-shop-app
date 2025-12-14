@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePromotion, IPromotion } from "@/contexts/PromotionContext";
@@ -129,15 +131,26 @@ const PromotionDetail = () => {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header with back button */}
-      <View className="flex-row items-center p-4 border-b border-gray-200 bg-white">
-        <TouchableOpacity onPress={() => router.back()} className="mr-3">
-          <Ionicons name="arrow-back" size={24} color="#2563eb" />
-        </TouchableOpacity>
-        <Text className="text-lg font-semibold text-gray-900">
-          Promotion Detail
-        </Text>
-      </View>
+      <StatusBar barStyle="dark-content" />
+      {/* Header */}
+      <SafeAreaView
+        className="bg-white border-b border-gray-200 mt-4"
+        edges={["top"]}
+      >
+        <View className="flex-row items-center justify-between px-4 py-3">
+          <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+            <Ionicons name="arrow-back" size={24} color="#222" />
+          </TouchableOpacity>
+          <Text className="text-lg font-semibold flex-1 mx-2" numberOfLines={1}>
+            {promotion.name}
+          </Text>
+          <View className="p-2 -mr-2">
+            {/* Placeholder để cân đối layout */}
+            <View style={{ width: 24, height: 24 }} />
+          </View>
+        </View>
+      </SafeAreaView>
+
       <FlatList
         data={promotion.applicableProducts}
         renderItem={renderApplicableProduct}
@@ -201,10 +214,6 @@ const PromotionDetail = () => {
                 </View>
               </View>
             </View>
-
-            {/* <Text className="text-lg font-semibold text-blue-600 mb-2">
-              Applicable Products:
-            </Text> */}
           </View>
         }
       />

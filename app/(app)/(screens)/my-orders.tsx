@@ -99,11 +99,15 @@ const MyOrdersContent = () => {
 
   // Filter orders based on active filter
   const filteredOrders = useMemo(() => {
-    const currentFilter = FILTER_OPTIONS.find((filter) => filter.key === activeFilter);
+    const currentFilter = FILTER_OPTIONS.find(
+      (filter) => filter.key === activeFilter
+    );
     if (!currentFilter || currentFilter.statuses.length === 0) {
       return orders; // Show all orders
     }
-    return orders.filter((order) => currentFilter.statuses.includes(order.status));
+    return orders.filter((order) =>
+      currentFilter.statuses.includes(order.status)
+    );
   }, [orders, activeFilter]);
 
   // Count orders for each filter

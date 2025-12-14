@@ -16,6 +16,7 @@ import { useProduct } from "@/contexts/ProductContext";
 import { getActiveCampaigns, ICampaign } from "@/services/campaignApi";
 import { useCart } from "@/contexts/CartContext";
 import { useRouter } from "expo-router";
+import { ImageSearchModal } from "@/components/Search";
 
 const Home = () => {
   const router = useRouter();
@@ -26,6 +27,9 @@ const Home = () => {
   // Campaign banners state
   const [campaigns, setCampaigns] = React.useState<ICampaign[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = React.useState(true);
+
+  // Image search modal state
+  const [isImageSearchOpen, setIsImageSearchOpen] = React.useState(false);
 
   // Get cart from CartContext
   const { addToCart } = useCart();
@@ -159,7 +163,7 @@ const Home = () => {
           {user?.firstName}
         </Text>
         {/* Search Bar */}
-        <View className="flex-row items-center mt-4">
+        <View className="flex-row items-center mt-4 gap-2">
           <View className="flex-1">
             <View className="flex-row items-center bg-gray-100 rounded-full px-4 h-12">
               <TouchableOpacity onPress={() => handleSearch(searchText)}>
@@ -182,8 +186,23 @@ const Home = () => {
               />
             </View>
           </View>
+
+          {/* Image Search Button */}
+          <TouchableOpacity
+            onPress={() => setIsImageSearchOpen(true)}
+            className="bg-blue-500 rounded-full w-12 h-12 items-center justify-center shadow-md"
+            activeOpacity={0.8}
+          >
+            <Ionicons name="camera" size={24} color="white" />
+          </TouchableOpacity>
         </View>
       </View>
+
+      {/* Image Search Modal */}
+      <ImageSearchModal
+        visible={isImageSearchOpen}
+        onClose={() => setIsImageSearchOpen(false)}
+      />
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Campaign Banner Section */}

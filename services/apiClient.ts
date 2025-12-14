@@ -31,7 +31,33 @@ function getApiBaseUrl() {
   return url;
 }
 
+/**
+ * Get AI API Base URL (port 8005)
+ * AI services run on separate port
+ */
+function getAiApiBaseUrl() {
+  const expoDebuggerHost = Constants.expoConfig?.hostUri;
+
+  if (expoDebuggerHost) {
+    const ip = expoDebuggerHost.split(":")[0];
+    const url = `http://${ip}:8005`;
+    console.log(`🤖 AI API Base URL (Expo Device): ${url}`);
+    return url;
+  }
+
+  if (Platform.OS === "android") {
+    const url = `http://10.0.2.2:8005`;
+    console.log(`🤖 AI API Base URL (Android Emulator): ${url}`);
+    return url;
+  }
+
+  const url = `http://localhost:8005`;
+  console.log(`🤖 AI API Base URL (iOS Simulator): ${url}`);
+  return url;
+}
+
 const API_BASE_URL = getApiBaseUrl();
+const AI_API_BASE_URL = getAiApiBaseUrl();
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -48,9 +74,44 @@ class ApiClient {
     resolve: (token: string | null) => void;
     reject: (error: any) => void;
   }[] = [];
+  private isLoggingOut: boolean = false;
+  private pendingRequests: Set<AbortController> = new Set();
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
+  }
+
+  /**
+   * Check if currently logging out
+   */
+  public getIsLoggingOut(): boolean {
+    return this.isLoggingOut;
+  }
+
+  /**
+   * Set logout state and abort all pending requests
+   */
+  public startLogout(): void {
+    if (this.isLoggingOut) return; // Already logging out
+
+    this.isLoggingOut = true;
+
+    // Abort all pending requests
+    this.pendingRequests.forEach((controller) => {
+      try {
+        controller.abort();
+      } catch (e) {
+        // Ignore abort errors
+      }
+    });
+    this.pendingRequests.clear();
+  }
+
+  /**
+   * Reset logout state after logout completes
+   */
+  public endLogout(): void {
+    this.isLoggingOut = false;
   }
 
   private async getAuthHeaders(): Promise<HeadersInit> {
@@ -158,6 +219,15 @@ class ApiClient {
     isRetry: boolean = false,
     originalBody?: string
   ): Promise<ApiResponse<T>> {
+    // Block new requests if logging out (except logout endpoint itself)
+    if (this.isLoggingOut && !endpoint.includes("/auth/logout")) {
+      throw new Error("Logging out, request cancelled");
+    }
+
+    // Create abort controller for this request
+    const abortController = new AbortController();
+    this.pendingRequests.add(abortController);
+
     try {
       const url = `${this.baseURL}${endpoint}`;
       console.log(`🚀 API Request: ${options.method || "GET"} ${url}`);
@@ -174,6 +244,7 @@ class ApiClient {
           ...headers,
           ...options.headers,
         },
+        signal: abortController.signal, // Add abort signal
       };
 
       console.log(`📤 Request config:`, {
@@ -222,6 +293,18 @@ class ApiClient {
       try {
         const text = await response.text();
         data = text ? JSON.parse(text) : {};
+
+        // Log successful response với full data
+        if (response.ok) {
+          console.log(`✅ API Response [${response.status}]:`, {
+            endpoint,
+            method: config.method,
+            status: response.status,
+            dataType: typeof data,
+            dataKeys: data ? Object.keys(data).slice(0, 10) : [],
+            fullData: data, // Log toàn bộ response data
+          });
+        }
       } catch (jsonErr) {
         // If DELETE and parse fails, it's probably empty - treat as success
         if (config.method === "DELETE" && response.ok) {
@@ -238,7 +321,7 @@ class ApiClient {
       // Handle 401 Unauthorized - try to refresh token once
       if (response.status === 401 && !isRetry && !endpoint.includes("/auth/")) {
         console.log("🔄 Got 401, attempting token refresh...");
-        
+
         try {
           const newToken = await this.refreshTokenIfNeeded();
           if (newToken) {
@@ -262,10 +345,16 @@ class ApiClient {
           "haven't reviewed",
           "already reviewed",
           "already in wishlist",
+          "AUTHORIZATION_DENIED",
+          "Access denied",
         ];
-        const isExpectedError = expectedErrors.some((msg) =>
-          data.message?.toLowerCase().includes(msg.toLowerCase())
-        );
+        const isExpectedError =
+          response.status === 403 || // Don't log 403 errors
+          expectedErrors.some(
+            (msg) =>
+              data.message?.toLowerCase().includes(msg.toLowerCase()) ||
+              data.error?.includes(msg)
+          );
 
         // Log response details for debugging (except expected errors)
         if (!isExpectedError) {
@@ -305,6 +394,11 @@ class ApiClient {
         message: data.message,
       };
     } catch (error: any) {
+      // Handle abort errors silently
+      if (error.name === "AbortError") {
+        throw new Error("Request cancelled");
+      }
+
       // Ẩn log lỗi parse JSON rỗng (SyntaxError: JSON Parse error: Unexpected end of input)
       if (
         error.name === "SyntaxError" &&
@@ -318,6 +412,10 @@ class ApiClient {
           "haven't reviewed",
           "already reviewed",
           "already in wishlist",
+          "Logging out",
+          "Request cancelled",
+          "Access denied",
+          "AUTHORIZATION_DENIED",
         ];
         const isExpectedError = expectedErrors.some((msg) =>
           error.message?.toLowerCase().includes(msg.toLowerCase())
@@ -338,6 +436,9 @@ class ApiClient {
             "An unexpected error occurred. Please try again later.";
 
       throw new Error(errorMessage);
+    } finally {
+      // Remove this request from pending set
+      this.pendingRequests.delete(abortController);
     }
   }
 
@@ -413,5 +514,6 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+export const aiApiClient = new ApiClient(AI_API_BASE_URL);
+export { AI_API_BASE_URL };
 export type { ApiResponse };
-

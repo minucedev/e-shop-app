@@ -103,7 +103,7 @@ const CartPurchase = () => {
       setDiscountInfo(response);
       setAppliedVoucherCode(voucherCode.trim().toUpperCase());
       setVoucherError("");
-      
+
       if (__DEV__) {
         console.log("✅ Voucher applied:", response);
       }
@@ -111,7 +111,7 @@ const CartPurchase = () => {
       setVoucherError(error.message || "Mã giảm giá không hợp lệ");
       setDiscountInfo(null);
       setAppliedVoucherCode("");
-      
+
       if (__DEV__) {
         console.error("❌ Voucher error:", error);
       }
@@ -262,264 +262,278 @@ const CartPurchase = () => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Delivery Info */}
-        <View className="px-5">
-          <Text className="text-xl font-bold text-black mb-4 mt-4">
-            Delivery
-          </Text>
-          {/* Name */}
-          <View className="h-12 rounded-full border border-gray-300 px-5 mb-2 bg-white justify-center">
-            <Text className="text-base text-gray-900">{deliveryInfo.name}</Text>
-          </View>
-          {/* Email */}
-          <View className="h-12 rounded-full border border-gray-300 px-5 mb-2 bg-white justify-center">
-            <Text className="text-base text-gray-900">
-              {deliveryInfo.email}
+          {/* Delivery Info */}
+          <View className="px-5">
+            <Text className="text-xl font-bold text-black mb-4 mt-4">
+              Delivery
             </Text>
-          </View>
-          {/* Address */}
-          <View className="min-h-[48px] rounded-full border border-gray-300 px-5 py-3 mb-2 bg-white justify-center">
-            {isLoading ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <Text className="text-base text-gray-900" numberOfLines={2}>
-                {deliveryInfo.address}
+            {/* Name */}
+            <View className="h-12 rounded-full border border-gray-300 px-5 mb-2 bg-white justify-center">
+              <Text className="text-base text-gray-900">
+                {deliveryInfo.name}
               </Text>
+            </View>
+            {/* Email */}
+            <View className="h-12 rounded-full border border-gray-300 px-5 mb-2 bg-white justify-center">
+              <Text className="text-base text-gray-900">
+                {deliveryInfo.email}
+              </Text>
+            </View>
+            {/* Address */}
+            <View className="min-h-[48px] rounded-full border border-gray-300 px-5 py-3 mb-2 bg-white justify-center">
+              {isLoading ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text className="text-base text-gray-900" numberOfLines={2}>
+                  {deliveryInfo.address}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {/* Payment Method */}
+          <View className="px-5 mt-8">
+            <Text className="text-xl font-bold text-black mb-4">
+              Payment Method
+            </Text>
+
+            {/* COD */}
+            <TouchableOpacity
+              onPress={() => setSelectedPaymentMethod("COD")}
+              className={`flex-row items-center p-4 rounded-xl mb-3 ${
+                selectedPaymentMethod === "COD"
+                  ? "border-2 border-blue-600 bg-blue-50"
+                  : "border border-gray-200 bg-white"
+              }`}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={
+                  selectedPaymentMethod === "COD"
+                    ? "checkmark-circle"
+                    : "ellipse-outline"
+                }
+                size={24}
+                color={selectedPaymentMethod === "COD" ? "#2563eb" : "#9ca3af"}
+              />
+              <View className="flex-1 ml-3">
+                <Text
+                  className={`text-base font-bold ${
+                    selectedPaymentMethod === "COD"
+                      ? "text-blue-600"
+                      : "text-gray-700"
+                  }`}
+                >
+                  Cash on Delivery (COD)
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* VNPay */}
+            <TouchableOpacity
+              onPress={() => setSelectedPaymentMethod("VNPAY")}
+              className={`flex-row items-center p-4 rounded-xl mb-3 ${
+                selectedPaymentMethod === "VNPAY"
+                  ? "border-2 border-blue-600 bg-blue-50"
+                  : "border border-gray-200 bg-white"
+              }`}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={
+                  selectedPaymentMethod === "VNPAY"
+                    ? "checkmark-circle"
+                    : "ellipse-outline"
+                }
+                size={24}
+                color={
+                  selectedPaymentMethod === "VNPAY" ? "#2563eb" : "#9ca3af"
+                }
+              />
+              <View className="flex-1 ml-3">
+                <Text
+                  className={`text-base font-bold ${
+                    selectedPaymentMethod === "VNPAY"
+                      ? "text-blue-600"
+                      : "text-gray-700"
+                  }`}
+                >
+                  VNPay
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Voucher Section */}
+          <View className="px-5 mt-6">
+            <Text className="text-xl font-bold text-black mb-4">
+              Mã giảm giá
+            </Text>
+
+            {appliedVoucherCode ? (
+              /* Applied Voucher */
+              <View className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <View className="flex-row items-center justify-between mb-2">
+                  <View className="flex-row items-center flex-1">
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color="#16a34a"
+                    />
+                    <Text className="text-green-700 font-bold text-base ml-2">
+                      {appliedVoucherCode}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={handleRemoveVoucher}
+                    className="ml-2"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#16a34a" />
+                  </TouchableOpacity>
+                </View>
+                {discountInfo && (
+                  <View>
+                    <Text className="text-green-600 text-sm">
+                      Giảm{" "}
+                      {discountInfo.voucherDiscount.toLocaleString("vi-VN")}₫
+                    </Text>
+                    {discountInfo.voucherType === "PERCENTAGE" && (
+                      <Text className="text-green-600 text-xs mt-1">
+                        ({discountInfo.voucherValue}% off)
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </View>
+            ) : (
+              /* Voucher Input */
+              <View>
+                <View className="flex-row gap-2 mb-2">
+                  <TextInput
+                    className="flex-1 h-12 border border-gray-300 rounded-xl px-4 bg-white text-base text-gray-900"
+                    placeholder="Nhập mã giảm giá"
+                    placeholderTextColor="#9ca3af"
+                    value={voucherCode}
+                    onChangeText={(text) => {
+                      setVoucherCode(text.toUpperCase());
+                      setVoucherError("");
+                    }}
+                    autoCapitalize="characters"
+                    editable={!isApplyingVoucher}
+                  />
+                  <TouchableOpacity
+                    onPress={handleApplyVoucher}
+                    disabled={isApplyingVoucher || !voucherCode.trim()}
+                    className={`h-12 px-6 rounded-xl items-center justify-center ${
+                      isApplyingVoucher || !voucherCode.trim()
+                        ? "bg-gray-300"
+                        : "bg-blue-600"
+                    }`}
+                    activeOpacity={0.7}
+                  >
+                    {isApplyingVoucher ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text className="text-white font-bold text-base">
+                        Áp dụng
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+                {voucherError ? (
+                  <View className="flex-row items-center mt-1">
+                    <Ionicons name="alert-circle" size={16} color="#ef4444" />
+                    <Text className="text-red-500 text-sm ml-1">
+                      {voucherError}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             )}
           </View>
-        </View>
 
-        {/* Payment Method */}
-        <View className="px-5 mt-8">
-          <Text className="text-xl font-bold text-black mb-4">
-            Payment Method
-          </Text>
+          {/* Spacer for bottom button */}
+          <View className="h-20" />
+        </ScrollView>
 
-          {/* COD */}
-          <TouchableOpacity
-            onPress={() => setSelectedPaymentMethod("COD")}
-            className={`flex-row items-center p-4 rounded-xl mb-3 ${
-              selectedPaymentMethod === "COD"
-                ? "border-2 border-blue-600 bg-blue-50"
-                : "border border-gray-200 bg-white"
-            }`}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={
-                selectedPaymentMethod === "COD"
-                  ? "checkmark-circle"
-                  : "ellipse-outline"
-              }
-              size={24}
-              color={selectedPaymentMethod === "COD" ? "#2563eb" : "#9ca3af"}
-            />
-            <View className="flex-1 ml-3">
-              <Text
-                className={`text-base font-bold ${
-                  selectedPaymentMethod === "COD"
-                    ? "text-blue-600"
-                    : "text-gray-700"
-                }`}
-              >
-                Cash on Delivery (COD)
-              </Text>
-            </View>
-          </TouchableOpacity>
+        {/* Total and Continue Button - Fixed at bottom */}
+        <View className="px-5 pb-4 pt-4 bg-white border-t border-gray-100">
+          {/* Total calculation */}
+          {(() => {
+            // Calculate subtotal from cart items
+            const subtotal = parsedCartItems.reduce(
+              (total: number, item: any) => {
+                return total + (item.totalPrice || 0);
+              },
+              0
+            );
 
-          {/* VNPay */}
-          <TouchableOpacity
-            onPress={() => setSelectedPaymentMethod("VNPAY")}
-            className={`flex-row items-center p-4 rounded-xl mb-3 ${
-              selectedPaymentMethod === "VNPAY"
-                ? "border-2 border-blue-600 bg-blue-50"
-                : "border border-gray-200 bg-white"
-            }`}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={
-                selectedPaymentMethod === "VNPAY"
-                  ? "checkmark-circle"
-                  : "ellipse-outline"
-              }
-              size={24}
-              color={selectedPaymentMethod === "VNPAY" ? "#2563eb" : "#9ca3af"}
-            />
-            <View className="flex-1 ml-3">
-              <Text
-                className={`text-base font-bold ${
-                  selectedPaymentMethod === "VNPAY"
-                    ? "text-blue-600"
-                    : "text-gray-700"
-                }`}
-              >
-                VNPay
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+            // Fixed shipping fee
+            const shippingFee = 30000;
 
-        {/* Voucher Section */}
-        <View className="px-5 mt-6">
-          <Text className="text-xl font-bold text-black mb-4">
-            Mã giảm giá
-          </Text>
+            // Discount amount
+            const discountAmount = discountInfo?.voucherDiscount || 0;
 
-          {appliedVoucherCode ? (
-            /* Applied Voucher */
-            <View className="bg-green-50 border border-green-200 rounded-xl p-4">
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center flex-1">
-                  <Ionicons name="checkmark-circle" size={24} color="#16a34a" />
-                  <Text className="text-green-700 font-bold text-base ml-2">
-                    {appliedVoucherCode}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={handleRemoveVoucher}
-                  className="ml-2"
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="close-circle" size={24} color="#16a34a" />
-                </TouchableOpacity>
-              </View>
-              {discountInfo && (
-                <View>
-                  <Text className="text-green-600 text-sm">
-                    Giảm {discountInfo.voucherDiscount.toLocaleString("vi-VN")}₫
-                  </Text>
-                  {discountInfo.voucherType === "PERCENTAGE" && (
-                    <Text className="text-green-600 text-xs mt-1">
-                      ({discountInfo.voucherValue}% off)
-                    </Text>
-                  )}
-                </View>
-              )}
-            </View>
-          ) : (
-            /* Voucher Input */
-            <View>
-              <View className="flex-row gap-2 mb-2">
-                <TextInput
-                  className="flex-1 h-12 border border-gray-300 rounded-xl px-4 bg-white text-base text-gray-900"
-                  placeholder="Nhập mã giảm giá"
-                  placeholderTextColor="#9ca3af"
-                  value={voucherCode}
-                  onChangeText={(text) => {
-                    setVoucherCode(text.toUpperCase());
-                    setVoucherError("");
-                  }}
-                  autoCapitalize="characters"
-                  editable={!isApplyingVoucher}
-                />
-                <TouchableOpacity
-                  onPress={handleApplyVoucher}
-                  disabled={isApplyingVoucher || !voucherCode.trim()}
-                  className={`h-12 px-6 rounded-xl items-center justify-center ${
-                    isApplyingVoucher || !voucherCode.trim()
-                      ? "bg-gray-300"
-                      : "bg-blue-600"
-                  }`}
-                  activeOpacity={0.7}
-                >
-                  {isApplyingVoucher ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text className="text-white font-bold text-base">
-                      Áp dụng
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-              {voucherError ? (
-                <View className="flex-row items-center mt-1">
-                  <Ionicons name="alert-circle" size={16} color="#ef4444" />
-                  <Text className="text-red-500 text-sm ml-1">
-                    {voucherError}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          )}
-        </View>
+            // Total = Subtotal + Shipping - Discount
+            const total = subtotal + shippingFee - discountAmount;
 
-        {/* Spacer for bottom button */}
-        <View className="h-20" />
-      </ScrollView>
+            // Format VND
+            const formatVND = (amount: number) => {
+              return new Intl.NumberFormat("vi-VN", {
+                style: "currency",
+                currency: "VND",
+              }).format(amount);
+            };
 
-      {/* Total and Continue Button - Fixed at bottom */}
-      <View className="px-5 pb-4 pt-4 bg-white border-t border-gray-100">{/* Total calculation */}
-        {(() => {
-          // Calculate subtotal from cart items
-          const subtotal = parsedCartItems.reduce(
-            (total: number, item: any) => {
-              return total + (item.totalPrice || 0);
-            },
-            0
-          );
-
-          // Fixed shipping fee
-          const shippingFee = 30000;
-
-          // Discount amount
-          const discountAmount = discountInfo?.voucherDiscount || 0;
-
-          // Total = Subtotal + Shipping - Discount
-          const total = subtotal + shippingFee - discountAmount;
-
-          // Format VND
-          const formatVND = (amount: number) => {
-            return new Intl.NumberFormat("vi-VN", {
-              style: "currency",
-              currency: "VND",
-            }).format(amount);
-          };
-
-          return (
-            <View className="mb-4">
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-base text-gray-600">Tạm tính</Text>
-                <Text className="text-base font-semibold text-gray-900">
-                  {formatVND(subtotal)}
-                </Text>
-              </View>
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-base text-gray-600">Phí vận chuyển</Text>
-                <Text className="text-base font-semibold text-gray-900">
-                  {formatVND(shippingFee)}
-                </Text>
-              </View>
-              {discountAmount > 0 && (
+            return (
+              <View className="mb-4">
                 <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-base text-green-600">Giảm giá</Text>
-                  <Text className="text-base font-semibold text-green-600">
-                    -{formatVND(discountAmount)}
+                  <Text className="text-base text-gray-600">Tạm tính</Text>
+                  <Text className="text-base font-semibold text-gray-900">
+                    {formatVND(subtotal)}
                   </Text>
                 </View>
-              )}
-              <View className="flex-row justify-between items-center mb-2 pt-2 border-t border-gray-200">
-                <Text className="text-lg font-bold text-black">Tổng cộng</Text>
-                <Text className="text-lg font-bold text-red-600">
-                  {formatVND(total)}
-                </Text>
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="text-base text-gray-600">
+                    Phí vận chuyển
+                  </Text>
+                  <Text className="text-base font-semibold text-gray-900">
+                    {formatVND(shippingFee)}
+                  </Text>
+                </View>
+                {discountAmount > 0 && (
+                  <View className="flex-row justify-between items-center mb-2">
+                    <Text className="text-base text-green-600">Giảm giá</Text>
+                    <Text className="text-base font-semibold text-green-600">
+                      -{formatVND(discountAmount)}
+                    </Text>
+                  </View>
+                )}
+                <View className="flex-row justify-between items-center mb-2 pt-2 border-t border-gray-200">
+                  <Text className="text-lg font-bold text-black">
+                    Tổng cộng
+                  </Text>
+                  <Text className="text-lg font-bold text-red-600">
+                    {formatVND(total)}
+                  </Text>
+                </View>
               </View>
-            </View>
-          );
-        })()}
-        <TouchableOpacity
-          className="bg-blue-600 rounded-xl h-14 items-center justify-center shadow-lg"
-          activeOpacity={0.8}
-          onPress={handlePlaceOrder}
-          disabled={isPlacingOrder || isLoading}
-        >
-          {isPlacingOrder ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white text-lg font-bold">Place Order</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+            );
+          })()}
+          <TouchableOpacity
+            className="bg-blue-600 rounded-xl h-14 items-center justify-center shadow-lg"
+            activeOpacity={0.8}
+            onPress={handlePlaceOrder}
+            disabled={isPlacingOrder || isLoading}
+          >
+            {isPlacingOrder ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white text-lg font-bold">Place Order</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

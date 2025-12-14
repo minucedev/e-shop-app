@@ -239,7 +239,6 @@ const Signup = () => {
         <TouchableOpacity
           style={styles.backButtonWrapper}
           onPress={() => {
-            console.log("Back button pressed!");
             router.back();
           }}
           activeOpacity={0.7}
@@ -557,7 +556,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.white,
     padding: 20,
-    paddingTop: 50,
+    paddingTop: 20,
   },
   backButtonWrapper: {
     height: 40,
@@ -609,7 +608,7 @@ const styles = StyleSheet.create({
   loginButtonWrapper: {
     backgroundColor: colors.primary,
     borderRadius: 100,
-    marginTop: 20,
+    marginTop: 40,
     paddingVertical: 15,
     alignItems: "center",
     justifyContent: "center",

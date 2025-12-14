@@ -11,7 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -37,6 +37,8 @@ import { orderApi } from "@/services/orderApi";
 import { ReviewSummaryCard } from "@/components/ReviewSummaryCard";
 import { ReviewCard } from "@/components/ReviewCard";
 import { ReviewForm } from "@/components/ReviewForm";
+import { MarkdownText } from "@/components/MarkdownText";
+import { DescriptionModal } from "@/components/DescriptionModal";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -59,7 +61,8 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isVariationDropdownOpen, setIsVariationDropdownOpen] = useState(false);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isDescriptionModalVisible, setIsDescriptionModalVisible] =
+    useState(false);
   const [isSpecsExpanded, setIsSpecsExpanded] = useState(false);
 
   // Review states
@@ -296,27 +299,73 @@ const ProductDetail = () => {
     }
   };
 
-  // Get current images based on selected variation
-  const currentImages = selectedVariation?.images || [];
+  // Get current images based on selected variation - memoized
+  const currentImages = useMemo(
+    () => selectedVariation?.images || [],
+    [selectedVariation?.images]
+  );
 
-  // Calculate discount percentage
-  const getDiscountPercent = (
-    originalPrice: number,
-    salePrice: number,
-    discountType: string | null,
-    discountValue: number | null
-  ) => {
-    if (discountType === "PERCENTAGE" && discountValue) {
-      return Math.round(discountValue);
-    }
-    if (originalPrice > salePrice) {
-      return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
-    }
-    return 0;
-  };
+  // Calculate discount percentage - memoized function
+  const getDiscountPercent = useCallback(
+    (
+      originalPrice: number,
+      salePrice: number,
+      discountType: string | null,
+      discountValue: number | null
+    ) => {
+      if (discountType === "PERCENTAGE" && discountValue) {
+        return Math.round(discountValue);
+      }
+      if (originalPrice > salePrice) {
+        return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+      }
+      return 0;
+    },
+    []
+  );
 
-  // Handle add to cart
-  const handleAddToCart = async () => {
+  // Memoize expensive calculations - MUST be before any early returns
+  const isProductFavorite = useMemo(
+    () => (product ? isInWishlist(parseInt(productId)) : false),
+    [isInWishlist, productId, product]
+  );
+
+  const currentPrice = useMemo(
+    () => selectedVariation?.salePrice || product?.displaySalePrice || 0,
+    [selectedVariation?.salePrice, product?.displaySalePrice]
+  );
+
+  const originalPrice = useMemo(
+    () => selectedVariation?.price || product?.displayOriginalPrice || 0,
+    [selectedVariation?.price, product?.displayOriginalPrice]
+  );
+
+  const hasDiscount = useMemo(
+    () => originalPrice > currentPrice,
+    [originalPrice, currentPrice]
+  );
+
+  const discountPercent = useMemo(
+    () =>
+      getDiscountPercent(
+        originalPrice,
+        currentPrice,
+        selectedVariation?.discountType || product?.discountType || null,
+        selectedVariation?.discountValue || product?.discountValue || null
+      ),
+    [
+      originalPrice,
+      currentPrice,
+      selectedVariation?.discountType,
+      selectedVariation?.discountValue,
+      product?.discountType,
+      product?.discountValue,
+      getDiscountPercent,
+    ]
+  );
+
+  // Handle add to cart - memoized
+  const handleAddToCart = useCallback(async () => {
     if (!selectedVariation) {
       return;
     }
@@ -335,21 +384,22 @@ const ProductDetail = () => {
 
     // Add to cart with variationId
     await addToCart(selectedVariation.id, quantity);
-  };
+  }, [selectedVariation, quantity, addToCart]);
 
-  // Handle quantity change
-  const increaseQuantity = () => {
+  // Handle quantity change - memoized
+  const increaseQuantity = useCallback(() => {
     if (selectedVariation && quantity < selectedVariation.availableQuantity) {
       setQuantity(quantity + 1);
     }
-  };
+  }, [selectedVariation, quantity]);
 
-  const decreaseQuantity = () => {
+  const decreaseQuantity = useCallback(() => {
     if (quantity > 1) {
       setQuantity(quantity - 1);
     }
-  };
+  }, [quantity]);
 
+  // Early returns AFTER all hooks
   if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
@@ -376,18 +426,6 @@ const ProductDetail = () => {
       </View>
     );
   }
-
-  const isProductFavorite = isInWishlist(parseInt(productId));
-  const currentPrice = selectedVariation?.salePrice || product.displaySalePrice;
-  const originalPrice =
-    selectedVariation?.price || product.displayOriginalPrice;
-  const hasDiscount = originalPrice > currentPrice;
-  const discountPercent = getDiscountPercent(
-    originalPrice,
-    currentPrice,
-    selectedVariation?.discountType || product.discountType,
-    selectedVariation?.discountValue || product.discountValue
-  );
 
   return (
     <View className="flex-1 bg-white">
@@ -416,7 +454,11 @@ const ProductDetail = () => {
         </View>
       </SafeAreaView>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+      >
         {/* Image Gallery Slider */}
         <View className="bg-gray-50">
           {currentImages.length > 0 ? (
@@ -430,13 +472,15 @@ const ProductDetail = () => {
                   const index = Math.round(x / SCREEN_WIDTH);
                   setCurrentImageIndex(index);
                 }}
-                scrollEventThrottle={16}
+                scrollEventThrottle={100}
+                removeClippedSubviews={true}
+                decelerationRate="fast"
               >
                 {currentImages.map((img, index) => (
                   <View
                     key={img.id}
                     style={{ width: SCREEN_WIDTH }}
-                    className="h-96 items-center justify-center"
+                    className="h-96 items-center justify-center bg-gray-100"
                   >
                     <Image
                       source={{
@@ -444,6 +488,8 @@ const ProductDetail = () => {
                       }}
                       className="w-full h-full"
                       resizeMode="contain"
+                      defaultSource={require("@/assets/images/icon.png")}
+                      fadeDuration={200}
                     />
                   </View>
                 ))}
@@ -680,20 +726,19 @@ const ProductDetail = () => {
             <Text className="text-lg font-semibold text-gray-900 mb-2">
               Mô tả sản phẩm
             </Text>
-            <Text
-              className="text-gray-700 leading-6"
-              numberOfLines={isDescriptionExpanded ? undefined : 4}
-            >
-              {product.description}
-            </Text>
-            {product.description && product.description.length > 150 && (
+            <View>
+              <MarkdownText>
+                {product.description && product.description.length > 200
+                  ? product.description.substring(0, 200) + "..."
+                  : product.description}
+              </MarkdownText>
+            </View>
+            {product.description && product.description.length > 200 && (
               <TouchableOpacity
-                onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                onPress={() => setIsDescriptionModalVisible(true)}
                 className="mt-2"
               >
-                <Text className="text-blue-600 font-semibold">
-                  {isDescriptionExpanded ? "Thu gọn" : "Xem thêm"}
-                </Text>
+                <Text className="text-blue-600 font-semibold">Xem thêm</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -922,6 +967,14 @@ const ProductDetail = () => {
           </Text>
         </TouchableOpacity>
       </SafeAreaView>
+
+      {/* Description Modal */}
+      <DescriptionModal
+        visible={isDescriptionModalVisible}
+        title={product.name}
+        content={product.description || ""}
+        onClose={() => setIsDescriptionModalVisible(false)}
+      />
     </View>
   );
 };
