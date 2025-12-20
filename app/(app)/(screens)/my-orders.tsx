@@ -13,6 +13,7 @@ import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { OrderProvider, useOrders } from "@/contexts/OrderContext";
 import { OrderCard } from "@/components/OrderCard";
+import { OrderDetailModal } from "@/components/OrderDetailModal";
 import { Order } from "@/services/orderApi";
 
 // Filter options for dropdown
@@ -76,11 +77,14 @@ const MyOrdersContent = () => {
     loadMoreOrders,
     loadAllOrders,
     refreshOrders,
+    cancelOrder,
   } = useOrders();
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     loadAllOrders(); // Load all orders to get accurate counts
@@ -95,6 +99,25 @@ const MyOrdersContent = () => {
   const handleLoadMore = () => {
     // Disabled since we load all orders at once for accurate counts
     return;
+  };
+
+  const handleOrderPress = (order: Order) => {
+    setSelectedOrder(order);
+    setIsModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
+    setSelectedOrder(null);
+  };
+
+  const handleCancelOrder = async (orderId: number): Promise<boolean> => {
+    const success = await cancelOrder(orderId);
+    if (success) {
+      // Refresh orders to get updated data
+      await refreshOrders();
+    }
+    return success;
   };
 
   // Filter orders based on active filter
@@ -324,7 +347,9 @@ const MyOrdersContent = () => {
       ) : (
         <FlatList
           data={filteredOrders}
-          renderItem={({ item }) => <OrderCard order={item} />}
+          renderItem={({ item }) => (
+            <OrderCard order={item} onPress={() => handleOrderPress(item)} />
+          )}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{
             padding: 16,
@@ -350,6 +375,14 @@ const MyOrdersContent = () => {
           <Text className="text-gray-500 mt-4">Đang tải đơn hàng...</Text>
         </View>
       )}
+
+      {/* Order Detail Modal */}
+      <OrderDetailModal
+        visible={isModalVisible}
+        order={selectedOrder}
+        onClose={handleCloseModal}
+        onCancelOrder={handleCancelOrder}
+      />
     </View>
   );
 };

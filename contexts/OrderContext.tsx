@@ -12,6 +12,7 @@ interface OrderContextType {
   loadMoreOrders: () => Promise<void>;
   loadAllOrders: () => Promise<void>;
   refreshOrders: () => Promise<void>;
+  cancelOrder: (orderId: number) => Promise<boolean>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -106,6 +107,35 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({
   const refreshOrders = useCallback(async () => {
     await loadAllOrders();
   }, [loadAllOrders]);
+
+  const cancelOrder = useCallback(async (orderId: number): Promise<boolean> => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await orderApi.cancelOrder(orderId);
+
+      if (response.success && response.data) {
+        // Update the order in the list
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order.id === orderId ? response.data! : order
+          )
+        );
+        return true;
+      } else {
+        setError(response.error || "Không thể hủy đơn hàng");
+        return false;
+      }
+    } catch (err: any) {
+      setError(err.message || "Đã xảy ra lỗi khi hủy đơn hàng");
+      console.error("Error cancelling order:", err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return (
     <OrderContext.Provider
       value={{
@@ -119,6 +149,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({
         loadMoreOrders,
         loadAllOrders,
         refreshOrders,
+        cancelOrder,
       }}
     >
       {children}

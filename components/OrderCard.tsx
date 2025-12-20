@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Order } from "@/services/orderApi";
-import { router } from "expo-router";
 
 interface OrderCardProps {
   order: Order;
+  onPress?: () => void;
 }
 
 const formatPrice = (price: number) => {
@@ -85,14 +85,11 @@ const getPaymentStatusText = (status: string) => {
   }
 };
 
-export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
+export const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
   const handlePress = () => {
-    // TODO: Implement order detail screen
-    // router.push({
-    //   pathname: "/(app)/(screens)/order-detail",
-    //   params: { orderId: order.id.toString() },
-    // });
-    console.log("View order detail:", order.id);
+    if (onPress) {
+      onPress();
+    }
   };
 
   return (

@@ -172,9 +172,27 @@ const confirmVnpayPayment = async (
   }
 };
 
+// Cancel order
+const cancelOrder = async (orderId: number): Promise<ApiResponse<Order>> => {
+  try {
+    const response = await apiClient.put<Order>(
+      `/orders/${orderId}/cancel`,
+      {}
+    );
+
+    return response;
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to cancel order",
+    };
+  }
+};
+
 export const orderApi = {
   createOrder,
   getOrderHistory,
   getOrderByCode,
   confirmVnpayPayment,
+  cancelOrder,
 };
