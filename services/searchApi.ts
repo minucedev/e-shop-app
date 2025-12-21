@@ -121,19 +121,43 @@ export const searchByImage = async (
       filename,
       mimeType,
       topK,
+      url: `${AI_API_BASE_URL}/search/image`,
     });
 
     // Note: Use fetch directly for multipart/form-data upload
-    const response = await fetch(`${AI_API_BASE_URL}/search/image`, {
-      method: "POST",
-      body: formData,
-      // Don't set Content-Type header - let browser set it with boundary
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ [SearchAPI] Image search failed:", errorText);
-      return [];
+    let response: Response;
+    try {
+      response = await fetch(`${AI_API_BASE_URL}/search/image`, {
+        method: "POST",
+        body: formData,
+        signal: controller.signal,
+        // Don't set Content-Type header - let browser set it with boundary
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ [SearchAPI] Image search failed:", {
+          status: response.status,
+          error: errorText,
+        });
+        return [];
+      }
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === "AbortError") {
+        console.error("❌ [SearchAPI] Image upload timeout after 30s");
+      } else {
+        console.error("❌ [SearchAPI] Image upload network error:", {
+          message: fetchError.message,
+          url: `${AI_API_BASE_URL}/search/image`,
+        });
+      }
+      throw fetchError;
     }
 
     const result: SearchResponse = await response.json();

@@ -114,7 +114,16 @@ class AuthApiService {
 
   // Đăng xuất
   async logout(): Promise<ApiResponse<{ message: string }>> {
-    return apiClient.post<{ message: string }>("/auth/logout");
+    const refreshToken = await this.getRefreshToken();
+    return apiClient.post<{ message: string }>("/auth/logout", { 
+      refreshToken 
+    });
+  }
+
+  // Helper để lấy refresh token từ storage
+  private async getRefreshToken(): Promise<string | null> {
+    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+    return AsyncStorage.getItem('refreshToken');
   }
 
   // Lấy thông tin profile hiện tại

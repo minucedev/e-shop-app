@@ -1,7 +1,7 @@
 // services/apiClient.ts
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TokenStorage } from "@/utils/authUtils";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
@@ -70,6 +70,10 @@ class ApiClient {
   private baseURL: string;
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<string | null> | null = null;
+  private failedQueue: {
+    resolve: (token: string | null) => void;
+    reject: (error: any) => void;
+  }[] = [];
   private isLoggingOut: boolean = false;
   private pendingRequests: Set<AbortController> = new Set();
 
@@ -111,12 +115,10 @@ class ApiClient {
   }
 
   private async getAuthHeaders(): Promise<HeadersInit> {
-    let token = await TokenStorage.getAccessToken();
+    const token = await TokenStorage.getAccessToken();
 
-    // Check if token needs refresh
-    if (token && (await TokenStorage.shouldRefreshToken())) {
-      token = await this.refreshTokenIfNeeded();
-    }
+    // Không tự động refresh ở đây để tránh refresh liên tục
+    // Chỉ refresh khi thực sự cần thiết (khi gặp 401)
 
     return {
       "Content-Type": "application/json",
@@ -124,10 +126,24 @@ class ApiClient {
     };
   }
 
+  private processQueue(error: any, token: string | null = null) {
+    this.failedQueue.forEach((prom) => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+
+    this.failedQueue = [];
+  }
+
   private async refreshTokenIfNeeded(): Promise<string | null> {
-    // If already refreshing, wait for the existing promise
-    if (this.isRefreshing && this.refreshPromise) {
-      return this.refreshPromise;
+    // If already refreshing, add to queue and wait
+    if (this.isRefreshing) {
+      return new Promise((resolve, reject) => {
+        this.failedQueue.push({ resolve, reject });
+      });
     }
 
     this.isRefreshing = true;
@@ -135,7 +151,11 @@ class ApiClient {
 
     try {
       const newToken = await this.refreshPromise;
+      this.processQueue(null, newToken);
       return newToken;
+    } catch (error) {
+      this.processQueue(error, null);
+      throw error;
     } finally {
       this.isRefreshing = false;
       this.refreshPromise = null;
@@ -149,7 +169,9 @@ class ApiClient {
         throw new Error("No refresh token available");
       }
 
-      const response = await fetch(`${this.baseURL}/auth/refresh`, {
+      console.log("🔄 Starting token refresh...");
+
+      const response = await fetch(`${this.baseURL}/auth/refresh-token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -163,24 +185,28 @@ class ApiClient {
 
       let data: any = undefined;
       try {
-        // Nếu response body rỗng, response.text() sẽ trả về chuỗi rỗng
         const text = await response.text();
         data = text ? JSON.parse(text) : {};
       } catch (jsonErr) {
-        // Nếu không parse được JSON, trả về object rỗng và không log lỗi
         data = {};
       }
+
       const {
         accessToken,
         refreshToken: newRefreshToken,
         expiresIn,
       } = data.data || data;
 
+      if (!accessToken || !newRefreshToken) {
+        throw new Error("Invalid refresh token response");
+      }
+
       await TokenStorage.setTokens(accessToken, newRefreshToken, expiresIn);
+      console.log("✅ Token refresh successful");
 
       return accessToken;
     } catch (error) {
-      console.error("Token refresh error:", error);
+      console.error("❌ Token refresh error:", error);
       // Clear invalid tokens
       await TokenStorage.clearTokens();
       return null;
@@ -190,7 +216,8 @@ class ApiClient {
   private async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {},
-    isRetry: boolean = false
+    isRetry: boolean = false,
+    originalBody?: string
   ): Promise<ApiResponse<T>> {
     // Block new requests if logging out (except logout endpoint itself)
     if (this.isLoggingOut && !endpoint.includes("/auth/logout")) {
@@ -205,10 +232,14 @@ class ApiClient {
       const url = `${this.baseURL}${endpoint}`;
       console.log(`🚀 API Request: ${options.method || "GET"} ${url}`);
 
+      // Cache original body for retry
+      const requestBody = originalBody || (options.body as string);
+
       const headers = await this.getAuthHeaders();
 
       const config: RequestInit = {
         ...options,
+        body: requestBody,
         headers: {
           ...headers,
           ...options.headers,
@@ -220,7 +251,7 @@ class ApiClient {
         url,
         method: config.method,
         headers: config.headers,
-        body: config.body,
+        body: config.body ? "***BODY_PRESENT***" : undefined,
       });
 
       const response = await fetch(url, config);
@@ -289,10 +320,18 @@ class ApiClient {
 
       // Handle 401 Unauthorized - try to refresh token once
       if (response.status === 401 && !isRetry && !endpoint.includes("/auth/")) {
-        const newToken = await this.refreshTokenIfNeeded();
-        if (newToken) {
-          // Retry with new token
-          return this.makeRequest(endpoint, options, true);
+        console.log("🔄 Got 401, attempting token refresh...");
+
+        try {
+          const newToken = await this.refreshTokenIfNeeded();
+          if (newToken) {
+            console.log("✅ Token refreshed, retrying original request...");
+            // Retry with new token and original body
+            return this.makeRequest(endpoint, options, true, requestBody);
+          }
+        } catch (refreshError) {
+          console.error("❌ Token refresh failed:", refreshError);
+          throw new Error("Session expired. Please login again.");
         }
       }
 
@@ -476,5 +515,5 @@ class ApiClient {
 
 export const apiClient = new ApiClient();
 export const aiApiClient = new ApiClient(AI_API_BASE_URL);
-export type { ApiResponse };
 export { AI_API_BASE_URL };
+export type { ApiResponse };
