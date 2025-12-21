@@ -1,58 +1,50 @@
 // services/apiClient.ts
 
+import { API_PORT, AI_API_PORT } from "@env";
 import { TokenStorage } from "@/utils/authUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-function getApiBaseUrl() {
+/**
+ * Get base host based on platform
+ * @returns The appropriate host IP or hostname
+ */
+function getBaseHost(): string {
   // Lấy IP từ manifest (khi chạy Expo trên thiết bị thật)
   const expoDebuggerHost = Constants.expoConfig?.hostUri;
 
   if (expoDebuggerHost) {
-    // Khi chạy trên thiết bị thật qua Expo, lấy IP từ debuggerHost
-    // Format: "192.168.x.x:8081" -> lấy phần IP
     const ip = expoDebuggerHost.split(":")[0];
-    const url = `http://${ip}:8081/api`;
-    console.log(`📡 API Base URL (Expo Device): ${url}`);
-    return url;
+    return ip;
   }
 
   // Fallback cho Android Emulator
   if (Platform.OS === "android") {
-    const url = `http://10.0.2.2:8081/api`;
-    console.log(`📡 API Base URL (Android Emulator): ${url}`);
-    return url;
+    return "10.0.2.2";
   }
 
   // Fallback cho iOS Simulator
-  const url = `http://localhost:8081/api`;
-  console.log(`📡 API Base URL (iOS Simulator): ${url}`);
+  return "localhost";
+}
+
+function getApiBaseUrl() {
+  const host = getBaseHost();
+  const port = API_PORT || "8081";
+  const url = `http://${host}:${port}/api`;
+  console.log(`📡 API Base URL: ${url}`);
   return url;
 }
 
 /**
- * Get AI API Base URL (port 8005)
+ * Get AI API Base URL
  * AI services run on separate port
  */
 function getAiApiBaseUrl() {
-  const expoDebuggerHost = Constants.expoConfig?.hostUri;
-
-  if (expoDebuggerHost) {
-    const ip = expoDebuggerHost.split(":")[0];
-    const url = `http://${ip}:8005`;
-    console.log(`🤖 AI API Base URL (Expo Device): ${url}`);
-    return url;
-  }
-
-  if (Platform.OS === "android") {
-    const url = `http://10.0.2.2:8005`;
-    console.log(`🤖 AI API Base URL (Android Emulator): ${url}`);
-    return url;
-  }
-
-  const url = `http://localhost:8005`;
-  console.log(`🤖 AI API Base URL (iOS Simulator): ${url}`);
+  const host = getBaseHost();
+  const port = AI_API_PORT || "8005"; // Default to 8005 if not set
+  const url = `http://${host}:${port}`;
+  console.log(`🤖 AI API Base URL: ${url}`);
   return url;
 }
 
